@@ -14,8 +14,7 @@
 
 
 class EngineCoreMinimal {
-    // TODO(bk5115545) Switch these volatiles to std::atomic<int>
-    // LAZY()
+    // TODO(bk5115545) Switch these volatiles to std::atomic<bool>
     volatile bool ready_ = false;
     volatile bool quit_ =  false;
     std::shared_ptr<App> app_ = nullptr;
@@ -63,10 +62,6 @@ class EngineCoreMinimal {
         UNUSED(event_data);
         quit_ = true;
         std::cout << "SHUTDOWN RECIEVED" << std::endl;
-        //========================================
-        // Clean-up
-        //========================================
-
     }
 };
 
@@ -74,7 +69,7 @@ int main(int argc, char* argv[]) {
     UNUSED(argc); UNUSED(argv);
 
     EngineCoreMinimal engine = EngineCoreMinimal();
-    Dispatcher::GetInstance()->DispatchImmediate("EVENT_RENDERER_INIT", std::shared_ptr<void>(nullptr));
+    Dispatcher::GetInstance()->DispatchImmediate("EVENT_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
     sleep(1000);

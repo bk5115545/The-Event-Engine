@@ -14,7 +14,7 @@ class BaseRender {
         BaseRenderStaticInit() {
             Subscriber* init_subscriber = new Subscriber(this, false);
             init_subscriber->method = std::bind(&BaseRenderStaticInit::Init, this, std::placeholders::_1);
-            Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_RENDERER_INIT");
+            Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_INITIAL_HOOK");
         }
 
         void Init(std::shared_ptr<void> event_data) {
