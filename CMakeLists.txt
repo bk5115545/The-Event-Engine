@@ -21,11 +21,11 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
     ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     # Compiler options for GCC and Clang on Linus or OSX
 
-    # Use C++ 11
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    # Use C++ 14
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
     # Set warning levels
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wdouble-promotion -Wno-unknown-pragmas")
 
     # Set debug and release flags
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -59,6 +59,7 @@ get_directory_property(PACK_INCLUDES DIRECTORY "${APP_PACK_DIR}" DEFINITION PACK
 # The below must be done AFTER the above line so it can't really go into source/CMakeLists.txt
 message(STATUS "SOURCE ........... ${SRC_FILES}")
 message(STATUS "PACK_SOURCE .......${PACK_SOURCE}")
+message(STATUS "PACK_INCLUDES .....${PACK_INCLUDES}")
 add_executable(${TARGET_NAME} ${SRC_FILES} ${PACK_SOURCE})
 
 target_include_directories(${TARGET_NAME} PRIVATE
@@ -67,7 +68,7 @@ target_include_directories(${TARGET_NAME} PRIVATE
     "${OPENGL_INCLUDE_DIR}"
     "${SDL2_INCLUDE_DIR}"
     "${CMAKE_SOURCE_DIR}/include"
-    #${PACK_INCLUDES}
+    ${PACK_INCLUDES}
 )
 
 target_link_libraries(${TARGET_NAME}

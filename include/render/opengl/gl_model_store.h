@@ -13,13 +13,13 @@
 #include "render/opengl/gl_model.h"
 
 class GlModelStore {
-protected:
-    std::map<std::string, GlModel*> model_store_;
+  protected:
+    std::map<std::string, std::shared_ptr<GlModel>> model_store;
 
-public:
+  public:
     GlModelStore();
     ~GlModelStore();
 
-    bool LoadAssets();
-    GlModel* Search(std::string);
+    bool loadAssets();
+    std::shared_ptr<GlModel> search(std::string);
 };

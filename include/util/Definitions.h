@@ -34,17 +34,4 @@ const float32 PI = 3.14159f;
 #include <list>
 #include <utility>
 
-//include chrono before thread because some versions of the standard lib are bugged (erhm... stdlibc++ 4.6)
-//libstd++ is fine though
-#include <chrono>
-#include <thread>
-
 #include "event_system/Subscriber.h"
-
-/**
- * Shorthand method to access cross-platform "sleep" functionality.
- * Will cause compile error without explicit inline or if inline is not respected.
-*/
-inline void sleep(int time_millis) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(time_millis));
-}

@@ -6,28 +6,32 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "virtual/component.h"
+#include "virtual/Component.h"
 
 #include "render/opengl/opengl_renderer.h"
 #include "render/opengl/gl_model.h"
-#include "render/actor.h"
+
+#include "core/Actor.h"
+
+#include "event_system/Subscriber.h"
+#include "event_system/Dispatcher.h"
 
 class OpenGLRenderer;
 
 class GlDrawable : public Component {
-protected:
-    Actor* owner_;
-    std::vector<Subscriber*> subscribers_;
+  protected:
+    Actor *owner;
+    std::vector<Subscriber *> subscribers;
 
-    glm::mat4 model_matrix_;
+    glm::mat4 model_matrix;
 
-    GlModel* model_;
+    std::shared_ptr<GlModel> model;
 
-public:
-    GlDrawable(Actor*);
+  public:
+    GlDrawable(Actor *);
     ~GlDrawable();
 
-    void Initialize(OpenGLRenderer*, GlModel*);
-    void Update(std::shared_ptr<void> delta_time);
-    void Draw(glm::mat4);
+    void initialize(std::shared_ptr<Renderer>, std::shared_ptr<GlModel>);
+    void process(std::shared_ptr<void> delta_time);
+    void draw(glm::mat4);
 };

@@ -1,11 +1,14 @@
 #include <memory>
 #include <map>
 #include <utility>
+#include <iostream>
 
 #include "SDL.h"
 
 #include "event_system/Dispatcher.h"
 #include "event_system/Subscriber.h"
+
+#include "util/CrossPlatform.h"
 
 
 class BasicSDLInput {

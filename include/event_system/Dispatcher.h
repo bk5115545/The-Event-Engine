@@ -1,12 +1,13 @@
 #pragma once
 
-#include "util/definitions.h"
-
 #include <condition_variable>
 #include <mutex>
 #include <deque>
 #include <map>
 #include <memory>
+
+#include <thread>
+#include<list>
 
 //Begin Dispatcher Class Section
 
@@ -20,23 +21,23 @@ class Dispatcher {
         Dispatcher();
         void Initialize();
 
-        static bool initialized_;
-        static bool running_;
+        static bool initialized;
+        static bool running;
 
-        static Dispatcher* instance_;
+        static Dispatcher* instance;
 
-        std::deque<std::pair<EventType,std::shared_ptr<void>>>*  dispatch_events_;
-        std::map<EventType,std::list<Subscriber*>*>* mapped_events_;
+        std::deque<std::pair<EventType,std::shared_ptr<void>>>*  dispatch_events;
+        std::map<EventType,std::list<Subscriber*>*>* mapped_events;
 
-        static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>*  thread_queue_;
-        static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>*  nonserial_queue_;
+        static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>*  thread_queue;
+        static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>*  nonserial_queue;
 
-        std::deque<std::thread*>* processing_threads_; //using std::deque for constant time size() and O(1) random access
+        std::deque<std::thread*>* processing_threads; //using std::deque for constant time size() and O(1) random access
 
-        static std::mutex dispatch_queue_mutex_;
-        static std::mutex thread_queue_mutex_;
-        static std::mutex mapped_event_mutex_;
-        static std::condition_variable thread_signal_;
+        static std::mutex dispatch_queue_mutex;
+        static std::mutex thread_queue_mutex;
+        static std::mutex mapped_event_mutex;
+        static std::condition_variable thread_signal;
 
 
     public:
@@ -58,7 +59,8 @@ class Dispatcher {
         void Pump();
         void NonSerialProcess();
 
-        int QueueSize() { return static_cast<int>(thread_queue_->size()); }
+        //Not entirely threadsafe but as long as the compiler respects the implicit inline then it will work fine
+        int QueueSize() { return static_cast<int>(thread_queue->size()); }
 
     private:
         static void ThreadProcess();

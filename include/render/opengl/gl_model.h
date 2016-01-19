@@ -12,27 +12,27 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "util/definitions.h"
-#include "render/renderer.h"
+#include "util/Definitions.h"
+#include "render/Renderer.h"
 
 class GlModel {
-protected:
-    GLuint vertex_buffer_object_;
-    GLuint color_buffer_object_;
+  protected:
+    GLuint vertex_buffer_object;
+    GLuint color_buffer_object;
 
-    GLuint mvp_id_;
+    GLuint mvp_id;
     // GLfloat* vertex_buffer_data_;
     // GLfloat* color_buffer_data_;
 
-    GLuint shader_program_;
+    GLuint shader_program;
 
-    GLuint LoadShaders(std::string, std::string);
+    GLuint loadShaders(std::string, std::string);
 
-public:
+  public:
     GlModel();
     ~GlModel();
 
-    void Initialize();
-    void Draw(glm::mat4);
-    void BufferData();
+    void initialize();
+    void draw(glm::mat4);
+    void bufferData();
 };

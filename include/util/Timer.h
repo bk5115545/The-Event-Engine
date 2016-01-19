@@ -1,6 +1,6 @@
 #pragma once
 
-#include "util/definitions.h"
+#include "util/Definitions.h"
 
 class Timer {
 private:
@@ -8,7 +8,7 @@ private:
     std::chrono::high_resolution_clock::time_point start_ticks_;
 
     // Time Delta!
-    float32 delta_time_;
+    float delta_time_;
 
 public:
     // Initializes variables
@@ -25,5 +25,5 @@ public:
     void Update();
 
     // Returns the time in ms from the last call
-    float32 DeltaTime();
+    float DeltaTime();
 };

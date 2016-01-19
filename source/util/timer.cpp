@@ -1,8 +1,9 @@
-#include "util/timer.h"
-#include "util/definitions.h"
+#include "util/Timer.h"
+
+#include <chrono>
 
 Timer::Timer() {
-    delta_time_ = (float32)0;
+    delta_time_ = (float)0;
 }
 
 void Timer::Start() {

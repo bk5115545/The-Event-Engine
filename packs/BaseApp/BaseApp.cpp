@@ -1,25 +1,26 @@
 #include <memory>
 
-#include "core/app_3d.h"
+#include "packs/BaseApp/App3D.h"
 
 #include "event_system/Dispatcher.h"
 #include "event_system/Subscriber.h"
 
 class BaseApp {
- public:
+  public:
     class BaseAppStaticInit {
         std::shared_ptr<App3D> app;
-     public:
+
+      public:
         BaseAppStaticInit() {
-            Subscriber* init_subscriber = new Subscriber(this, false);
-            init_subscriber->method = std::bind(&BaseAppStaticInit::Init, this, std::placeholders::_1);
+            Subscriber *init_subscriber = new Subscriber(this, false);
+            init_subscriber->method = std::bind(&BaseAppStaticInit::init, this, std::placeholders::_1);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_RENDER_INIT_SUCCESS");
         }
 
-        void Init(std::shared_ptr<void> event_data) {
+        void init(std::shared_ptr<void> event_data) {
             app = std::shared_ptr<App3D>(new App3D());
-            if (!app->Initialize(std::static_pointer_cast<Renderer>(event_data))) {
-                printf("Game could not Initialize!");
+            if (!app->initialize(std::static_pointer_cast<Renderer>(event_data))) {
+                printf("App could not Initialize!");
                 exit(1);
             }
 
@@ -28,7 +29,8 @@ class BaseApp {
     };
 
     friend class BaseAppStaticInit;
- public:
+
+  public:
     static BaseApp::BaseAppStaticInit init;
 };
 

@@ -3,21 +3,16 @@
 
 #include "render/opengl/gl_model_store.h"
 
-GlModelStore::GlModelStore() {
-}
+GlModelStore::GlModelStore() {}
 
-GlModelStore::~GlModelStore() {
+GlModelStore::~GlModelStore() {}
 
-}
-
-bool GlModelStore::LoadAssets() {
+bool GlModelStore::loadAssets() {
     // Hard coded cube
-    GlModel* cube = new GlModel();
-    cube->Initialize();
-    model_store_.insert(std::pair<std::string, GlModel*>("cube", cube));
+    std::shared_ptr<GlModel> cube = std::shared_ptr<GlModel>(new GlModel());
+    cube->initialize();
+    model_store.insert(std::pair<std::string, std::shared_ptr<GlModel>>("cube", cube));
     return true;
 }
 
-GlModel* GlModelStore::Search(std::string model_name) {
-    return model_store_.at(model_name);
-}
+std::shared_ptr<GlModel> GlModelStore::search(std::string model_name) { return model_store.at(model_name); }

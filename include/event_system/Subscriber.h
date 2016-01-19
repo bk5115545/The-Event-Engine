@@ -3,7 +3,6 @@
 #include <functional>
 #include <memory>
 
-#include "util/definitions.h"
 #include "event_system/Dispatcher.h"
 
 typedef void (SubscriptionFunction(std::shared_ptr<void>));
