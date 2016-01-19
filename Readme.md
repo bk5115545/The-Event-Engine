@@ -21,7 +21,7 @@ Dispatcher::GetInstance()->AddEventSubscriber(sub, "EVENT_STRING_HERE");
 ```
 
 Deleting callbacks from the event registry is also straightforward.
-Simply ```cpp delete sub;``` and the Dispatcher will recognize that the Subscriber has been deleted.
+Simply `delete sub;` and the Dispatcher will recognize that the Subscriber has been deleted.
 
 To submit an event to The Event Engine
 ```cpp
