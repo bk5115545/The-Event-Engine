@@ -25,7 +25,6 @@ class BaseApp {
 
             Dispatcher::GetInstance()->DispatchImmediate("EVENT_APP_INIT_SUCCESS", app);
         }
-
     };
 
     friend class BaseAppStaticInit;
