@@ -19,11 +19,11 @@ bool GlCamera::initialize() {
     up_vector = glm::vec3(0.0, 1.0, 0.0);
     position = glm::vec3(4, 3, -3);
 
-    Subscriber *input_subscriber = new Subscriber(this);
+    Subscriber* input_subscriber = new Subscriber(this);
     input_subscriber->method = std::bind(&GlCamera::onInput, this, std::placeholders::_1);
     Dispatcher::GetInstance()->AddEventSubscriber(input_subscriber, "EVENT_INPUT");
 
-    Subscriber *update_subscriber = new Subscriber(this);
+    Subscriber* update_subscriber = new Subscriber(this);
     update_subscriber->method = std::bind(&GlCamera::update, this, std::placeholders::_1);
     Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_COMPONENT_UPDATE");
 
@@ -36,12 +36,12 @@ bool GlCamera::initialize() {
 }
 
 void GlCamera::onInput(std::shared_ptr<void> event) {
-    std::pair<int, bool> *pair = (std::pair<int, bool> *)event.get();
+    std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
     tracked_keys[pair->first] = pair->second;
 }
 
 void GlCamera::update(std::shared_ptr<void> event_data) {
-    float32 delta_time = *(float *)event_data.get();
+    float32 delta_time = *(float*)event_data.get();
 
     float32 z_movement = 0;
     float32 x_movement = 0;

@@ -20,15 +20,15 @@ class OpenGLRenderer;
 
 class GlDrawable : public Component {
   protected:
-    Actor *owner;
-    std::vector<Subscriber *> subscribers;
+    Actor* owner;
+    std::vector<Subscriber*> subscribers;
 
     glm::mat4 model_matrix;
 
     std::shared_ptr<GlModel> model;
 
   public:
-    GlDrawable(Actor *);
+    GlDrawable(Actor*);
     ~GlDrawable();
 
     void initialize(std::shared_ptr<Renderer>, std::shared_ptr<GlModel>);

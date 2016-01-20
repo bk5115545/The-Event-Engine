@@ -13,14 +13,14 @@
 #include "virtual/Component.h"
 
 class Actor {
-protected:
+  protected:
     glm::vec3 pos;
     // glm::mat4 model_matrix_;
 
     std::vector<Component*> components;
     std::vector<Subscriber*> subscribers;
 
-public:
+  public:
     Actor();
     ~Actor();
     void Initialize(std::string);

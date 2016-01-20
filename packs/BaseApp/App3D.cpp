@@ -40,7 +40,11 @@ bool App3D::initialize(std::shared_ptr<Renderer> rend) {
     model_store->loadAssets();
 
     timer = new Timer();
-    timer->Start();
+    timer->start();
+
+    Subscriber* run_subscriber = new Subscriber(this, false);
+    run_subscriber->method = std::bind(&App3D::run, this, std::placeholders::_1);
+    Dispatcher::GetInstance()->AddEventSubscriber(run_subscriber, "EVENT_APP_RUN");
 
     return true;
 }
@@ -48,43 +52,31 @@ bool App3D::initialize(std::shared_ptr<Renderer> rend) {
 void App3D::reset() {}
 
 bool App3D::loadLevel(std::string file) {
-    Actor *new_actor = new Actor();
+    Actor* new_actor = new Actor();
     // new_actor->Initialize("cube")
     std::string model = "cube";
 
-    GlDrawable *new_gldrawable = new GlDrawable(new_actor);
+    GlDrawable* new_gldrawable = new GlDrawable(new_actor);
     new_gldrawable->initialize(renderer, model_store->search(model));
-    Component *new_component = static_cast<Component *>(new_gldrawable);
+    Component* new_component = static_cast<Component*>(new_gldrawable);
     new_actor->AddComponent(new_component);
 
     return true;
 }
 
-void App3D::run() {
-    update(timer->DeltaTime());
-    timer->Update();
+void App3D::run(std::shared_ptr<void> event_data) {
+    UNUSED(event_data);
+
+    update(std::make_shared<float>(timer->get_deltaTime()));
+    timer->update();
 
     renderer->preDraw();
     renderer->draw();
     renderer->postDraw();
 }
 
-void App3D::update(float delta_time) {
+void App3D::update(std::shared_ptr<void> event_data) {
+    Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
-    Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", std::make_shared<float>(delta_time));
-
-    Dispatcher::GetInstance()->Pump();
-    Dispatcher::GetInstance()->NonSerialProcess();
-
-    std::cout << "FPS: " << 1 / delta_time << "\r";
-
-    // TODO(bk515545)
-    // We have to wait for all threads to finish before terminating this function
-    // otherwise updating and rendering might access the same variables
-    // simultaniously
-    // this is a work around while a better solution is put into Dispatcher
-    while (Dispatcher::GetInstance()->QueueSize() > 0) {
-        // std::cout << "Thread queue is too full...  waiting a bit" << std::endl;
-        sleep(1);
-    }
+    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << "\r";
 }

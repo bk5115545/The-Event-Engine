@@ -1,6 +1,6 @@
 #pragma once
 
-#define UNUSED(x) (void)x;
+#define UNUSED(x) (void) x;
 
 // Unsigned Integers
 typedef unsigned long long int uint64;
@@ -23,8 +23,6 @@ enum State { kFacingLeft, kFacingRight, kStationary, kJumping, kStopped };
 
 // Constants
 const float32 PI = 3.14159f;
-
-
 
 // Includes for EventSystem (should restructure to not need these globally.
 #include <string>

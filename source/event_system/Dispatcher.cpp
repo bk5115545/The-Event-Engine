@@ -24,15 +24,13 @@ std::mutex Dispatcher::mapped_event_mutex;
 std::condition_variable Dispatcher::thread_signal;
 
 Dispatcher* Dispatcher::instance = nullptr;
-std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>*  Dispatcher::thread_queue;
+std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::thread_queue;
 std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::nonserial_queue;
 
 // Begin Class Methods
-Dispatcher::Dispatcher() { }
+Dispatcher::Dispatcher() {}
 
-Dispatcher::~Dispatcher() {
-    Terminate();
-}
+Dispatcher::~Dispatcher() { Terminate(); }
 
 Dispatcher* Dispatcher::GetInstance() {
     if (instance == nullptr) {
@@ -47,9 +45,9 @@ void Dispatcher::Initialize() {
     if (!initialized) {
         initialized = true;
 
-        dispatch_events  = new std::deque<std::pair<EventType, std::shared_ptr<void>>>();
-        mapped_events    = new std::map<EventType, std::list<Subscriber*>*>();
-        thread_queue     = new std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>();
+        dispatch_events = new std::deque<std::pair<EventType, std::shared_ptr<void>>>();
+        mapped_events = new std::map<EventType, std::list<Subscriber*>*>();
+        thread_queue = new std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>();
         nonserial_queue = new std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>();
 
         processing_threads = new std::deque<std::thread*>();
@@ -57,7 +55,7 @@ void Dispatcher::Initialize() {
         running = true;
 
         // Adjust the thread count
-        for (int i=0; i < 3; i++) {
+        for (int i = 0; i < 3; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess);
             // it probably won't terminate before the end of this program so we want to ignore errors
             // processing_thread->detach();
@@ -69,14 +67,15 @@ void Dispatcher::Initialize() {
 }
 
 void Dispatcher::Pump() {
-    if (!Dispatcher::running) return;
+    if (!Dispatcher::running)
+        return;
 
     std::lock_guard<std::mutex> dispatchLock(dispatch_queue_mutex);
     for (auto i : *dispatch_events) {
         // try is needed to handle linux map implementations
         try {
             // handle microsoft map implementation
-            if(mapped_events->count(i.first) == 0) {
+            if (mapped_events->count(i.first) == 0) {
                 mapped_events->emplace(i.first, new std::list<Subscriber*>());
             }
             if (mapped_events->count(i.first) == 0) {
@@ -89,15 +88,16 @@ void Dispatcher::Pump() {
             // std::cerr << "Or " << msg << std::endl;
         }
     }
-    dispatch_events->clear();  // we queued them all for processing so clear the cache
+    dispatch_events->clear(); // we queued them all for processing so clear the cache
 }
 
 void Dispatcher::NonSerialProcess() {
-    while(nonserial_queue->size() > 0) {
+    while (nonserial_queue->size() > 0) {
         auto work = nonserial_queue->front();
         nonserial_queue->pop_front();
         try {
-            if (work.first->method == NULL) continue;
+            if (work.first->method == NULL)
+                continue;
             work.first->method(work.second);
         } catch (std::string msg) {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
@@ -108,24 +108,26 @@ void Dispatcher::NonSerialProcess() {
 
 void Dispatcher::ThreadProcess() {
     while (running) {
-        std::pair<Subscriber*, std::shared_ptr<void>> work;  // compiler might whine here
+        std::pair<Subscriber*, std::shared_ptr<void>> work; // compiler might whine here
 
         try {
             // enter new scope so std::unique_lock will unlock on exceptions
             std::unique_lock<std::mutex> lock(thread_queue_mutex);
-            while (running && thread_queue->size() == 0) thread_signal.wait(lock);
-            if (!running) continue;
+            while (running && thread_queue->size() == 0)
+                thread_signal.wait(lock);
+            if (!running)
+                continue;
             work = thread_queue->front();
             thread_queue->pop_front();
-        }
-        catch (std::string e) {
+        } catch (std::string e) {
             std::cerr << "Exception thrown while waiting/getting work for Thread." << std::endl;
             std::cerr << e << std::endl;
             continue;
         }
 
         try {
-            if (work.first->method == NULL) continue;
+            if (work.first->method == NULL)
+                continue;
             work.first->method(work.second);
         } catch (std::string e) {
             std::cerr << "Exception thrown by function called by Event Threads." << std::endl;
@@ -155,8 +157,8 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
     }
 
     std::lock_guard<std::mutex> lock(thread_queue_mutex);
-    for (auto it=mapped_events->at(eventID)->begin(); it != mapped_events->at(eventID)->end(); it++) {
-        if(*it == nullptr) {
+    for (auto it = mapped_events->at(eventID)->begin(); it != mapped_events->at(eventID)->end(); it++) {
+        if (*it == nullptr) {
             it = mapped_events->at(eventID)->erase(it);
             continue;
         }
@@ -169,12 +171,10 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
     }
 }
 
-void Dispatcher::AddEventSubscriber(Subscriber *requestor, const EventType event_id) {
+void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
     if (mapped_events->count(event_id) < 1) {
-        std::cerr << "Dispatcher --->  Dynamically allocating list for EventID "
-            << event_id << "."
-            << std::endl << "Dispatcher --->  This should be avoided for performance reasons."
-            << std::endl;
+        std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl
+                  << "Dispatcher --->  This should be avoided for performance reasons." << std::endl;
         mapped_events->emplace(event_id, new std::list<Subscriber*>());
     }
     mapped_events->at(event_id)->push_back(requestor);
@@ -194,8 +194,8 @@ void Dispatcher::Terminate() {
     // terminate before the condition variable is uninitialized (avoid crash from microsoft)
     thread_signal.notify_all();
     for (std::thread* t : *processing_threads) {
-        t->join();  // should stop eventually...
-        delete t;   // i'm pretty sure we need to shutdown the threads before we delete them
+        t->join(); // should stop eventually...
+        delete t;  // i'm pretty sure we need to shutdown the threads before we delete them
     }
 
     // There is a race condition with the condition variable and the threadpool on Microsoft implementations

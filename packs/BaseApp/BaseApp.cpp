@@ -12,7 +12,7 @@ class BaseApp {
 
       public:
         BaseAppStaticInit() {
-            Subscriber *init_subscriber = new Subscriber(this, false);
+            Subscriber* init_subscriber = new Subscriber(this, false);
             init_subscriber->method = std::bind(&BaseAppStaticInit::init, this, std::placeholders::_1);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_RENDER_INIT_SUCCESS");
         }

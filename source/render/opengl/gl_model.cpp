@@ -107,7 +107,7 @@ GLuint GlModel::loadShaders(std::string vertex_file_path, std::string fragment_f
 
     // Compile Vertex Shader
     printf("Compiling shader : %s\n", vertex_file_path.c_str());
-    char const *vertex_source_pointer = vertex_shader_code.c_str();
+    char const* vertex_source_pointer = vertex_shader_code.c_str();
     glShaderSource(vertex_shader_id, 1, &vertex_source_pointer, NULL);
     glCompileShader(vertex_shader_id);
 
@@ -122,7 +122,7 @@ GLuint GlModel::loadShaders(std::string vertex_file_path, std::string fragment_f
 
     // Compile Fragment Shader
     printf("Compiling shader : %s\n", fragment_file_path.c_str());
-    char const *FragmentSourcePointer = fragment_shader_code.c_str();
+    char const* FragmentSourcePointer = fragment_shader_code.c_str();
     glShaderSource(fragment_shader_id, 1, &FragmentSourcePointer, NULL);
     glCompileShader(fragment_shader_id);
 

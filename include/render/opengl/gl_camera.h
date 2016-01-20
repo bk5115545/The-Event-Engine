@@ -13,7 +13,7 @@
 #include "SDL.h"
 
 class GlCamera : public Camera {
-protected:
+  protected:
     uint32 velocity;
 
     glm::vec3 up_vector;
@@ -25,7 +25,7 @@ protected:
 
     std::map<int, bool> tracked_keys;
 
-public:
+  public:
     bool initialize();
     void onInput(std::shared_ptr<void>);
     void update(std::shared_ptr<void>);

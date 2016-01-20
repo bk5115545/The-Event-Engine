@@ -22,11 +22,11 @@ class EngineCoreMinimal {
 
   public:
     EngineCoreMinimal() {
-        Subscriber *ready_subscriber = new Subscriber(this, false);
+        Subscriber* ready_subscriber = new Subscriber(this, false);
         ready_subscriber->method = std::bind(&EngineCoreMinimal::app_ready, this, std::placeholders::_1);
         Dispatcher::GetInstance()->AddEventSubscriber(ready_subscriber, "EVENT_APP_READY");
 
-        Subscriber *shutdown_subscriber = new Subscriber(this, false);
+        Subscriber* shutdown_subscriber = new Subscriber(this, false);
         shutdown_subscriber->method = std::bind(&EngineCoreMinimal::all_shutdown, this, std::placeholders::_1);
         Dispatcher::GetInstance()->AddEventSubscriber(shutdown_subscriber, "EVENT_ALL_SHUTDOWN");
     }
@@ -56,9 +56,14 @@ class EngineCoreMinimal {
         while (!quit) {
             // Provide a way for packs to hook into the main loop
             Dispatcher::GetInstance()->DispatchEvent("EVENT_APP_RUN", std::shared_ptr<void>(nullptr));
-            Dispatcher::GetInstance()->Pump();
-            Dispatcher::GetInstance()->NonSerialProcess();
-            app->run();
+
+            // TODO(bk515545)
+            // Need to add actual wait functionality into Dispatcher
+            while (Dispatcher::GetInstance()->QueueSize() > 0) {
+                Dispatcher::GetInstance()->Pump();
+                Dispatcher::GetInstance()->NonSerialProcess();
+                sleep(1);
+            }
         }
     }
 
@@ -69,7 +74,7 @@ class EngineCoreMinimal {
     }
 };
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 

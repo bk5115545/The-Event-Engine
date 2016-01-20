@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <memory>
 #include <string>
 
 #include "core/Actor.h"
@@ -14,7 +15,7 @@
 #include "virtual/App.h"
 
 class App3D : public App {
-protected:
+  protected:
     Timer* timer;
 
     std::shared_ptr<OpenGLRenderer> renderer;
@@ -23,12 +24,12 @@ protected:
 
     std::list<Actor*> actors;
 
-public:
+  public:
     App3D();
     ~App3D();
     bool initialize(std::shared_ptr<Renderer> renderer);
     void reset();
     bool loadLevel(std::string config_file_name);
-    void run();
-    void update(float delta_time);
+    void run(std::shared_ptr<void> event_data);
+    void update(std::shared_ptr<void> event_data);
 };

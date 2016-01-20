@@ -1,9 +1,9 @@
 #include "render/opengl/gl_drawable.h"
 
-GlDrawable::GlDrawable(Actor *owner) {
+GlDrawable::GlDrawable(Actor* owner) {
     this->owner = owner;
 
-    Subscriber *s = new Subscriber(this);
+    Subscriber* s = new Subscriber(this);
     s->method = std::bind(&GlDrawable::process, this, std::placeholders::_1);
     Dispatcher::GetInstance()->AddEventSubscriber(s, "EVENT_COMPONENT_UPDATE");
     subscribers.push_back(s);
@@ -12,7 +12,7 @@ GlDrawable::GlDrawable(Actor *owner) {
 GlDrawable::~GlDrawable() { owner = nullptr; }
 
 void GlDrawable::initialize(std::shared_ptr<Renderer> renderer, std::shared_ptr<GlModel> model) {
-    ((OpenGLRenderer *)renderer.get())->addModel(this);
+    ((OpenGLRenderer*)renderer.get())->addModel(this);
     this->model = model;
 }
 

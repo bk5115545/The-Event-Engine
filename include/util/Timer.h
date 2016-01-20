@@ -3,27 +3,20 @@
 #include "util/Definitions.h"
 
 class Timer {
-private:
-    // The clock time when the timer started
-    std::chrono::high_resolution_clock::time_point start_ticks_;
+  private:
+    std::chrono::high_resolution_clock::time_point start_ticks;
 
-    // Time Delta!
-    float delta_time_;
+    float delta_time;
 
-public:
-    // Initializes variables
+  public:
     Timer();
 
-    // The various clock actions
-    void Start();
-    void Reset();
+    void start();
+    void reset();
 
-    // Checks the status of the timer
-    bool IsRunning();
+    bool isRunning();
 
-    // Update DeltaTime
-    void Update();
+    void update();
 
-    // Returns the time in ms from the last call
-    float DeltaTime();
+    float get_deltaTime();
 };

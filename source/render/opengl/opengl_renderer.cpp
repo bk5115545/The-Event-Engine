@@ -73,7 +73,7 @@ bool OpenGLRenderer::initialize() {
     return true;
 }
 
-void OpenGLRenderer::addModel(GlDrawable *model) { models.push_back(model); }
+void OpenGLRenderer::addModel(GlDrawable* model) { models.push_back(model); }
 
 void OpenGLRenderer::preDraw() { glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); }
 
@@ -89,4 +89,4 @@ int OpenGLRenderer::get_width() { return width; }
 
 int OpenGLRenderer::get_height() { return height; }
 
-void OpenGLRenderer::set_camera(Camera *cam) { camera = (GlCamera *)cam; }
+void OpenGLRenderer::set_camera(Camera* cam) { camera = (GlCamera*)cam; }

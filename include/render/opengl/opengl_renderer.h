@@ -23,13 +23,13 @@ class GlDrawable;
 
 class OpenGLRenderer : public Renderer {
   protected:
-    SDL_Window *window;
+    SDL_Window* window;
     SDL_GLContext context;
-    GlCamera *camera;
+    GlCamera* camera;
     GLuint mvp_uniform;
     GLuint vertex_array_id;
 
-    std::vector<GlDrawable *> models;
+    std::vector<GlDrawable*> models;
 
     int width;
     int height;
@@ -41,7 +41,7 @@ class OpenGLRenderer : public Renderer {
     ~OpenGLRenderer();
 
     bool initialize();
-    void addModel(GlDrawable *model);
+    void addModel(GlDrawable* model);
 
     void preDraw();
     void draw();
@@ -50,5 +50,5 @@ class OpenGLRenderer : public Renderer {
     int get_width();
     int get_height();
 
-    void set_camera(Camera *cam);
+    void set_camera(Camera* cam);
 };
