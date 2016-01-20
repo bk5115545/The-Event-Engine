@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
     sleep(1000);
-
+    Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
 
     // Run the engine
