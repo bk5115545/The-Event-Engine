@@ -56,6 +56,8 @@ class EngineCoreMinimal {
         while (!quit) {
             // Provide a way for packs to hook into the main loop
             Dispatcher::GetInstance()->DispatchEvent("EVENT_APP_RUN", std::shared_ptr<void>(nullptr));
+            Dispatcher::GetInstance()->Pump();
+            Dispatcher::GetInstance()->NonSerialProcess();
 
             // TODO(bk515545)
             // Need to add actual wait functionality into Dispatcher
