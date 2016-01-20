@@ -22,7 +22,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
     # Compiler options for GCC and Clang on Linus or OSX
 
     # Use C++ 14
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
 
     # Set warning levels
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wdouble-promotion -Wno-unknown-pragmas")

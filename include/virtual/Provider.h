@@ -1,5 +1,6 @@
 #include <memory>
 
-#inclue "util/Definitions.h"
-
-template <typename T, ... Args> class Provider { virtual T provide(Args) = 0; };
+class Provider {
+    virtual std::string get_name() { return std::string(""); };
+    virtual std::shared_ptr<void> provide(std::shared_ptr<void> arg) = 0;
+};

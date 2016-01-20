@@ -39,13 +39,13 @@ class Dispatcher {
     static std::mutex mapped_event_mutex;
     static std::condition_variable thread_signal;
 
+    Dispatcher(const Dispatcher&);            // disallow copying
+    Dispatcher& operator=(const Dispatcher&); // disallow copying
+
   public:
     static Dispatcher* GetInstance();
 
     ~Dispatcher();
-
-    Dispatcher(const Dispatcher&); // disallow copying
-    Dispatcher& operator=(const Dispatcher&); // disallow copying
 
     void Terminate();
 
@@ -58,6 +58,7 @@ class Dispatcher {
     void Pump();
     void NonSerialProcess();
 
+    // TODO(bk5115545) Move into class (or maybe remove)
     // Not entirely threadsafe but as long as the compiler respects the implicit inline then it will work fine
     int QueueSize() { return static_cast<int>(thread_queue->size()); }
 
