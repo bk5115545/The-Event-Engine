@@ -54,11 +54,13 @@ void App3D::reset() {}
 bool App3D::loadLevel(std::string file) {
     UNUSED(file);
 
-    Actor* new_actor = new Actor();
-    GlDrawable* new_gldrawable = new GlDrawable(new_actor);
-    new_gldrawable->initialize(renderer, model_store->search("cube"));
-    Component* new_component = static_cast<Component*>(new_gldrawable);
-    new_actor->AddComponent(new_component);
+    for (int i = 0; i < 1000; i++) {
+        Actor* new_actor = new Actor();
+        GlDrawable* new_gldrawable = new GlDrawable(new_actor);
+        new_gldrawable->initialize(renderer, model_store->search("cube"));
+        Component* new_component = static_cast<Component*>(new_gldrawable);
+        new_actor->AddComponent(new_component);
+    }
 
     return true;
 }
@@ -78,5 +80,7 @@ void App3D::update(std::shared_ptr<void> event_data) {
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
     std::cout << "FPS: " << 1 / *(float*)(event_data.get())
-              << "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\r";
+              << "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\t"
+              << Dispatcher::GetInstance()->NonSerialQueueSize() << "\t"
+              << Dispatcher::GetInstance()->ProcessingThreads() << "\n";
 }

@@ -35,6 +35,7 @@ class Dispatcher {
 
     std::deque<std::thread*>* processing_threads; // using std::deque for constant time size() and O(1) random access
 
+    static std::mutex nonserial_queue_mutex;
     static std::mutex dispatch_queue_mutex;
     static std::mutex thread_queue_mutex;
     static std::mutex mapped_event_mutex;
@@ -65,6 +66,7 @@ class Dispatcher {
 
     int ThreadQueueSize();
     int NonSerialQueueSize();
+    int ProcessingThreads();
     bool Active();
 
   private:

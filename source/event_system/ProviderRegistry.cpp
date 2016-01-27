@@ -6,6 +6,9 @@
 // TODO(bk5115545) convert this to use std::shared_mutex when c++1z is common (don't pull in boost)
 #include <mutex>
 
+bool ProviderRegistry::inited = false;
+ProviderRegistry* ProviderRegistry::theInstance = nullptr;
+
 ProviderRegistry::ProviderRegistry() { provider_lookup = new std::map<EventType, std::shared_ptr<Provider>>(); }
 
 ProviderRegistry* ProviderRegistry::GetInstance() {

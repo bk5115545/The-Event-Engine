@@ -7,6 +7,8 @@
 #include <string>
 
 // Threaded Events
+#include "event_system/ProviderRegistry.h"
+#include "event_system/Provider.h"
 #include "event_system/Dispatcher.h"
 #include "event_system/Subscriber.h"
 
@@ -59,11 +61,16 @@ class EngineCoreMinimal {
             Dispatcher::GetInstance()->Pump();
             Dispatcher::GetInstance()->NonSerialProcess();
 
-            while (Dispatcher::GetInstance()->ThreadQueueSize() > 0 || Dispatcher::GetInstance()->Active()) {
-                Dispatcher::GetInstance()->Pump();
-                Dispatcher::GetInstance()->NonSerialProcess();
+            while (Dispatcher::GetInstance()->ThreadQueueSize() > 10000) {
                 sleep(1);
+                std::cout << "Dispatcher threads aren't fast enough so sleeping for 1ms." << std::endl;
             }
+
+            // if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
+            //    ProviderRegistry::GetInstance()
+            //        ->lookup("Engine Logging")
+            //        ->provide(std::make_shared<std::string>(std::string("Logging in main_loop.")));
+            //}
         }
     }
 
@@ -78,17 +85,28 @@ int main(int argc, char* argv[]) {
     UNUSED(argc);
     UNUSED(argv);
 
+    // Kind of the startup sequence.  I need to document this somewhere
+    // TODO(bk5115545) Document startup sequence addition of PROVIDER_INITIAL_HOOK
+
     EngineCoreMinimal engine = EngineCoreMinimal();
+
+    // Dispatcher::GetInstance()->DispatchImmediate("PROVIDER_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
+    // Dispatcher::GetInstance()->Pump();
+    // Dispatcher::GetInstance()->NonSerialProcess();
+    // sleep(1000);
+
     Dispatcher::GetInstance()->DispatchImmediate("EVENT_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
     sleep(1000);
+
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
 
     // Run the engine
     engine.main_loop();
 
+    // Allow objects to respond to EVENT_SHUTDOWN_ALL
     while (Dispatcher::GetInstance()->ThreadQueueSize() > 0 || Dispatcher::GetInstance()->Active()) {
         Dispatcher::GetInstance()->Pump();
         Dispatcher::GetInstance()->NonSerialProcess();

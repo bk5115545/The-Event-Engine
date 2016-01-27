@@ -3,6 +3,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <deque>
+#include <queue>
 #include <map>
 #include <string>
 #include <list>
@@ -17,7 +18,7 @@
 // Dispatcher Static Variables
 bool Dispatcher::initialized = false;
 bool Dispatcher::running = false;
-
+std::mutex Dispatcher::nonserial_queue_mutex;
 std::mutex Dispatcher::dispatch_queue_mutex;
 std::mutex Dispatcher::thread_queue_mutex;
 std::mutex Dispatcher::mapped_event_mutex;
@@ -56,10 +57,14 @@ void Dispatcher::Initialize() {
 
         processing_threads = new std::deque<std::thread*>();
 
+        processing_count = 0;
+        in_queue_count = 0;
+        nonserial_queue_count = 0;
+
         running = true;
 
         // Adjust the thread count
-        for (int i = 0; i < 3; i++) {
+        for (int i = 0; i < 7; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess);
             processing_threads->push_back(processing_thread);
         }
@@ -79,15 +84,10 @@ void Dispatcher::Pump() {
             // handle microsoft map implementation
             if (mapped_events->count(i.first) == 0) {
                 mapped_events->emplace(i.first, new std::list<Subscriber*>());
-            }
-            if (mapped_events->count(i.first) == 0) {
-                // std::cerr << "Event \"" + i.first + "\" does not apply to any Subscribers." << std::endl;
                 continue;
             }
             DispatchImmediate(i.first, i.second);
         } catch (std::string msg) {
-            // std::cerr << "Either event \"" + i.first + "\" does not apply to any Subscribers." << std::endl;
-            // std::cerr << "Or " << msg << std::endl;
         }
     }
     dispatch_events->clear(); // we queued them all for processing so clear the cache
@@ -111,31 +111,50 @@ void Dispatcher::NonSerialProcess() {
 }
 
 void Dispatcher::ThreadProcess() {
+    // There is a lot of issues with threads blocking on the thread_queue_mutex lock
+    // if each thread had a list of jobs to do then this wouldn't be nearly as big of an issue
+    register std::queue<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache;
+    // std::cout << "Thread starting" << std::endl;
     while (running) {
-        std::pair<Subscriber*, std::shared_ptr<void>> work;
+        // std::cout << "Top of loop" << std::endl;
+        register std::pair<Subscriber*, std::shared_ptr<void>> work;
         try {
-            std::unique_lock<std::mutex> lock(thread_queue_mutex);
-            while (running && in_queue_count == 0)
+            // if (in_queue_count == 0)
+            //    GetInstance()->Pump();
+
+            thread_local std::unique_lock<std::mutex> lock(thread_queue_mutex);
+            while (running && in_queue_count == 0) {
+                // std::cout << "Waiting" << std::endl;
                 thread_signal.wait(lock);
+            }
             if (!running)
                 continue;
-            in_queue_count--;
-            work = thread_queue->front();
-            thread_queue->pop_front();
+
+            for (int i = 0; i < 30 && thread_queue->size() > 0; i++) {
+                in_queue_count--;
+                thread_cache.push(thread_queue->front());
+                thread_queue->pop_front();
+                // std::cout << "Got event" << std::endl;
+            }
         } catch (std::string e) {
             std::cerr << "Exception thrown while waiting/getting work for Thread." << std::endl;
             std::cerr << e << std::endl;
             continue;
         }
 
-        try {
-            if (work.first->method == NULL)
-                continue;
-            processing_count++;
-            work.first->method(work.second);
-        } catch (std::string e) {
-            std::cerr << "Exception thrown by function called by Event Threads." << std::endl;
-            std::cerr << e << std::endl;
+        processing_count++;
+        for (int i = thread_cache.size(); i > 0; i--) {
+            try {
+                work = thread_cache.front();
+                thread_cache.pop();
+                if (work.first->method == NULL)
+                    continue;
+                // std::cout << "did work" << std::endl;
+                work.first->method(work.second);
+            } catch (std::string e) {
+                std::cerr << "Exception thrown by function called by Event Threads." << std::endl;
+                std::cerr << e << std::endl;
+            }
         }
         processing_count--;
     }
@@ -147,35 +166,35 @@ void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<vo
 }
 
 void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
-    // std::cout << "Dispatcher --->  Received event " << eventID << "." << std::endl;
-    std::lock_guard<std::mutex> dispatchLock(mapped_event_mutex);
+    // std::lock_guard<std::mutex> mappedLock(mapped_event_mutex);
 
     if (mapped_events->count(eventID) == 0) {
         mapped_events->emplace(eventID, new std::list<Subscriber*>());
-        // std::cerr << "Event \"" + eventID + "\" does not apply to any Subscribers." << std::endl;
         return;
     }
 
     if (mapped_events->at(eventID)->size() == 0) {
-        // std::cerr << "Event \"" + eventID + "\" does not apply to any Subscribers." << std::endl;
         return;
     }
 
-    std::lock_guard<std::mutex> lock(thread_queue_mutex);
     for (auto it = mapped_events->at(eventID)->begin(); it != mapped_events->at(eventID)->end(); it++) {
         if (*it == nullptr) {
             it = mapped_events->at(eventID)->erase(it);
             continue;
         }
+
         if ((*it)->serialized) {
+            std::lock_guard<std::mutex> lock(thread_queue_mutex);
             thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
             in_queue_count++;
-            thread_signal.notify_one();
         } else {
+            std::lock_guard<std::mutex> lock2(nonserial_queue_mutex);
             nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
             nonserial_queue_count++;
         }
     }
+
+    thread_signal.notify_all();
 }
 
 void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
@@ -231,4 +250,5 @@ void Dispatcher::Terminate() {
 
 int Dispatcher::ThreadQueueSize() { return in_queue_count; }
 int Dispatcher::NonSerialQueueSize() { return nonserial_queue_count; }
+int Dispatcher::ProcessingThreads() { return processing_count; }
 bool Dispatcher::Active() { return processing_count > 0; }

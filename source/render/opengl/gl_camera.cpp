@@ -24,7 +24,7 @@ GLCamera::~GLCamera() {
 bool GLCamera::initialize() {
     velocity = 1;
     up_vector = glm::vec3(0.0, 1.0, 0.0);
-    position = glm::vec3(4, 3, -3);
+    position = glm::vec3(0, 5, -10);
 
     input_subscriber = new Subscriber(this);
     input_subscriber->method = std::bind(&GLCamera::onInput, this, std::placeholders::_1);

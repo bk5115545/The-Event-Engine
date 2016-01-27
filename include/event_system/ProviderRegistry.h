@@ -11,12 +11,12 @@
 
 #include "event_system/Dispatcher.h"
 #include "event_system/Subscriber.h"
-#include "virtual/Provider.h"
+#include "event_system/Provider.h"
 
 class ProviderRegistry {
   private:
-    bool inited = false;
-    ProviderRegistry* theInstance;
+    static bool inited;
+    static ProviderRegistry* theInstance;
     std::map<EventType, std::shared_ptr<Provider>>* provider_lookup;
 
     std::mutex lookup_mutex;
@@ -26,7 +26,7 @@ class ProviderRegistry {
     ProviderRegistry& operator=(const ProviderRegistry&); // disallow copying
 
   public:
-    ProviderRegistry* GetInstance();
+    static ProviderRegistry* GetInstance();
 
     bool hasProvider(EventType key);
     bool provide(EventType key, std::shared_ptr<Provider> provider, bool overwrite = false);
