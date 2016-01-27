@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -15,7 +17,6 @@
 class Actor {
   protected:
     glm::vec3 pos;
-    // glm::mat4 model_matrix_;
 
     std::vector<Component*> components;
     std::vector<Subscriber*> subscribers;

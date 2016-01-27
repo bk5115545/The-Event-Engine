@@ -20,7 +20,7 @@ class App3D : public App {
 
     std::shared_ptr<OpenGLRenderer> renderer;
     GLCamera* camera;
-    GlModelStore* model_store;
+    GLModelStore* model_store;
 
     std::list<Actor*> actors;
 

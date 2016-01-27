@@ -36,7 +36,7 @@ bool App3D::initialize(std::shared_ptr<Renderer> rend) {
 
     renderer->set_camera(camera);
 
-    model_store = new GlModelStore();
+    model_store = new GLModelStore();
     model_store->loadAssets();
 
     timer = new Timer();
@@ -52,12 +52,11 @@ bool App3D::initialize(std::shared_ptr<Renderer> rend) {
 void App3D::reset() {}
 
 bool App3D::loadLevel(std::string file) {
-    Actor* new_actor = new Actor();
-    // new_actor->Initialize("cube")
-    std::string model = "cube";
+    UNUSED(file);
 
+    Actor* new_actor = new Actor();
     GlDrawable* new_gldrawable = new GlDrawable(new_actor);
-    new_gldrawable->initialize(renderer, model_store->search(model));
+    new_gldrawable->initialize(renderer, model_store->search("cube"));
     Component* new_component = static_cast<Component*>(new_gldrawable);
     new_actor->AddComponent(new_component);
 
@@ -78,5 +77,6 @@ void App3D::run(std::shared_ptr<void> event_data) {
 void App3D::update(std::shared_ptr<void> event_data) {
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
-    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << "\r";
+    std::cout << "FPS: " << 1 / *(float*)(event_data.get())
+              << "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\r";
 }

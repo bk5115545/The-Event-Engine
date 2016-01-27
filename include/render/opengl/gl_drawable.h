@@ -1,5 +1,7 @@
 #pragma once
 
+#define GLM_FORCE_RADIANS
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -25,13 +27,13 @@ class GlDrawable : public Component {
 
     glm::mat4 model_matrix;
 
-    std::shared_ptr<GlModel> model;
+    std::shared_ptr<GLModel> model;
 
   public:
     GlDrawable(Actor*);
     ~GlDrawable();
 
-    void initialize(std::shared_ptr<Renderer>, std::shared_ptr<GlModel>);
+    void initialize(std::shared_ptr<Renderer>, std::shared_ptr<GLModel>);
     void process(std::shared_ptr<void> delta_time);
     void draw(glm::mat4);
 };

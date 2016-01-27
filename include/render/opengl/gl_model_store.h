@@ -12,14 +12,14 @@
 
 #include "render/opengl/gl_model.h"
 
-class GlModelStore {
+class GLModelStore {
   protected:
-    std::map<std::string, std::shared_ptr<GlModel>> model_store;
+    std::map<std::string, std::shared_ptr<GLModel>> model_store;
 
   public:
-    GlModelStore();
-    ~GlModelStore();
+    GLModelStore();
+    ~GLModelStore();
 
     bool loadAssets();
-    std::shared_ptr<GlModel> search(std::string);
+    std::shared_ptr<GLModel> search(std::string);
 };

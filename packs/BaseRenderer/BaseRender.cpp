@@ -19,6 +19,8 @@ class BaseRender {
         }
 
         void init(std::shared_ptr<void> event_data) {
+            UNUSED(event_data);
+
             int screen_width = 800;
             int screen_height = 600;
 

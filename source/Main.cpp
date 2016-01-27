@@ -70,7 +70,7 @@ class EngineCoreMinimal {
     void all_shutdown(std::shared_ptr<void> event_data) {
         UNUSED(event_data);
         quit = true;
-        std::cout << "SHUTDOWN RECIEVED" << std::endl;
+        std::cout << "\nSHUTDOWN RECIEVED" << std::endl;
     }
 };
 

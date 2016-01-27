@@ -11,7 +11,7 @@ GlDrawable::GlDrawable(Actor* owner) {
 
 GlDrawable::~GlDrawable() { owner = nullptr; }
 
-void GlDrawable::initialize(std::shared_ptr<Renderer> renderer, std::shared_ptr<GlModel> model) {
+void GlDrawable::initialize(std::shared_ptr<Renderer> renderer, std::shared_ptr<GLModel> model) {
     ((OpenGLRenderer*)renderer.get())->addModel(this);
     this->model = model;
 }

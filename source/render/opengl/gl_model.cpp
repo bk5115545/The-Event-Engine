@@ -4,14 +4,14 @@
 
 #include "render/opengl/gl_model.h"
 
-GlModel::GlModel() {}
+GLModel::GLModel() {}
 
-GlModel::~GlModel() {
+GLModel::~GLModel() {
     glInvalidateBufferData(vertex_buffer_object);
     glInvalidateBufferData(color_buffer_object);
 }
 
-void GlModel::initialize() {
+void GLModel::initialize() {
     std::string vertex_shader = "Assets/Shaders/SimpleVertexShader.vert";
     std::string fragment_shader = "Assets/Shaders/SimpleFragmentShader.frag";
 
@@ -22,7 +22,7 @@ void GlModel::initialize() {
     bufferData();
 }
 
-void GlModel::draw(glm::mat4 model_view_projection) {
+void GLModel::draw(glm::mat4 model_view_projection) {
     glUseProgram(shader_program);
 
     glUniformMatrix4fv(mvp_id, 1, GL_FALSE, glm::value_ptr(model_view_projection));
@@ -40,7 +40,7 @@ void GlModel::draw(glm::mat4 model_view_projection) {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_TRUE, 0, nullptr);
 }
 
-void GlModel::bufferData() {
+void GLModel::bufferData() {
     GLfloat vertex_buffer_data[] = {
         -1.0f, -1.0f, -1.0f,                      // triangle 1 : begin
         -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  // triangle 1 : end
@@ -72,7 +72,7 @@ void GlModel::bufferData() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(color_buffer_data), color_buffer_data, GL_STATIC_DRAW);
 }
 
-GLuint GlModel::loadShaders(std::string vertex_file_path, std::string fragment_file_path) {
+GLuint GLModel::loadShaders(std::string vertex_file_path, std::string fragment_file_path) {
     // Create the shaders
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
     GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
