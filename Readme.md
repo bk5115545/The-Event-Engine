@@ -7,9 +7,9 @@ This is a work in progress project.  All listed features are fully functional bu
 The Event Engine provides a basis for event-driven programming tightly coupled with a semi-automatic parallelization layer.
 
 ##Features:##
-Event Driven
-Code Packs
-Semi-Automatic Parallelization
+Event Driven  
+Code Packs  
+Semi-Automatic Parallelization  
 
 #Event Driven#
 Registering callbacks with The Event Engine is straightforward.
@@ -41,7 +41,8 @@ More documentation on how The Event Engine handles background tasks is in the wo
 
 #Code Packs#
 With it's drag-and-drop Code Packages, you can customize The Event Engine toward your specific goal.  
-Code Packs register events with The Event Engine via Java-style static initialization.  This style has some caveats so it's highly recommended to closely follow the pattern in the base packs.  If you have doubts about this style, checkout some of the base packages.
+Code Packs register events with The Event Engine via Java-style static initialization.  This style has some caveats so it's highly recommended to closely follow the pattern in the base packs.  If you have doubts about this style, checkout some of the base packages.  
+
 More documentation on Code Packs is available in the packs/ folder (most of it has yet to be written).
 In order to keep Code Packs modular and portable, Code Packs must use the cmake build system.  The default CMakeLists in packs/ shows how to include a specific code pack in your build environment (WIP).
 
@@ -54,4 +55,4 @@ and
 ```cpp
 Subscriber* sub = new Subscriber(this); // creates a multi-threaded Subscriber object
 ```
-If you opt to use the multi-threaded Subscriber object take care when designing callbacks as they may be called multiple times concurrently with different arguments.  Shorter callbacks will make this practice more scalable.
+If you opt to use the multi-threaded Subscriber object, take care when designing callbacks as they may be called multiple times concurrently with different arguments.  Shorter callbacks will make this practice more scalable.
