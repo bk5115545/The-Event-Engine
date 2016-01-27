@@ -14,15 +14,18 @@ class BasicSDLInput {
   public:
     class BasicSDLInputStaticInit {
         std::map<SDL_Keycode, bool> translations_;
+        Subscriber* init_subscriber;
 
       public:
         BasicSDLInputStaticInit() {
             SDL_Init(0);
-            Subscriber* init_subscriber = new Subscriber(this, false);
+            init_subscriber = new Subscriber(this, false);
             init_subscriber->method = std::bind(&BasicSDLInputStaticInit::init, this, std::placeholders::_1);
             // Lets use the late event to see if something else initialized SDL for us
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_APP_INIT_SUCCESS_LATE");
         }
+
+        ~BasicSDLInputStaticInit() { delete init_subscriber; }
 
         void init(std::shared_ptr<void> event_data) {
             // Some kind of SDL_Init bug is happening here that shows that SDL_INIT_EVENTS is already set even tough it
@@ -89,7 +92,7 @@ class BasicSDLInput {
         }
     };
 
-    friend class BasicSDLInputStaicInit;
+    friend class BasicSDLInputStaticInit;
     static BasicSDLInput::BasicSDLInputStaticInit init;
 };
 

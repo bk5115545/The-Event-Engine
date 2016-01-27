@@ -12,7 +12,7 @@
 
 #include "SDL.h"
 
-class GlCamera : public Camera {
+class GLCamera : public Camera {
   protected:
     uint32 velocity;
 
@@ -23,9 +23,13 @@ class GlCamera : public Camera {
     glm::mat4 view;
     glm::mat4 vp_matrix;
 
+    Subscriber* input_subscriber;
+    Subscriber* update_subscriber;
+
     std::map<int, bool> tracked_keys;
 
   public:
+    ~GLCamera();
     bool initialize();
     void onInput(std::shared_ptr<void>);
     void update(std::shared_ptr<void>);

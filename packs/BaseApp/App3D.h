@@ -19,7 +19,7 @@ class App3D : public App {
     Timer* timer;
 
     std::shared_ptr<OpenGLRenderer> renderer;
-    GlCamera* camera;
+    GLCamera* camera;
     GlModelStore* model_store;
 
     std::list<Actor*> actors;

@@ -27,6 +27,10 @@ Dispatcher* Dispatcher::instance = nullptr;
 std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::thread_queue;
 std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::nonserial_queue;
 
+std::atomic_int Dispatcher::processing_count;
+std::atomic_int Dispatcher::in_queue_count;
+std::atomic_int Dispatcher::nonserial_queue_count;
+
 // Begin Class Methods
 Dispatcher::Dispatcher() {}
 
@@ -57,8 +61,6 @@ void Dispatcher::Initialize() {
         // Adjust the thread count
         for (int i = 0; i < 3; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess);
-            // it probably won't terminate before the end of this program so we want to ignore errors
-            // processing_thread->detach();
             processing_threads->push_back(processing_thread);
         }
     } else {
@@ -95,6 +97,7 @@ void Dispatcher::NonSerialProcess() {
     while (nonserial_queue->size() > 0) {
         auto work = nonserial_queue->front();
         nonserial_queue->pop_front();
+
         try {
             if (work.first->method == NULL)
                 continue;
@@ -103,20 +106,20 @@ void Dispatcher::NonSerialProcess() {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
             std::cerr << msg << std::endl;
         }
+        nonserial_queue_count--;
     }
 }
 
 void Dispatcher::ThreadProcess() {
     while (running) {
-        std::pair<Subscriber*, std::shared_ptr<void>> work; // compiler might whine here
-
+        std::pair<Subscriber*, std::shared_ptr<void>> work;
         try {
-            // enter new scope so std::unique_lock will unlock on exceptions
             std::unique_lock<std::mutex> lock(thread_queue_mutex);
-            while (running && thread_queue->size() == 0)
+            while (running && in_queue_count == 0)
                 thread_signal.wait(lock);
             if (!running)
                 continue;
+            in_queue_count--;
             work = thread_queue->front();
             thread_queue->pop_front();
         } catch (std::string e) {
@@ -128,11 +131,13 @@ void Dispatcher::ThreadProcess() {
         try {
             if (work.first->method == NULL)
                 continue;
+            processing_count++;
             work.first->method(work.second);
         } catch (std::string e) {
             std::cerr << "Exception thrown by function called by Event Threads." << std::endl;
             std::cerr << e << std::endl;
         }
+        processing_count--;
     }
 }
 
@@ -164,17 +169,18 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
         }
         if ((*it)->serialized) {
             thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+            in_queue_count++;
             thread_signal.notify_one();
         } else {
             nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+            nonserial_queue_count++;
         }
     }
 }
 
 void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
     if (mapped_events->count(event_id) < 1) {
-        std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl
-                  << "Dispatcher --->  This should be avoided for performance reasons." << std::endl;
+        std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl;
         mapped_events->emplace(event_id, new std::list<Subscriber*>());
     }
     mapped_events->at(event_id)->push_back(requestor);
@@ -198,12 +204,19 @@ void Dispatcher::Terminate() {
         delete t;  // i'm pretty sure we need to shutdown the threads before we delete them
     }
 
+    delete processing_threads;
+
     // There is a race condition with the condition variable and the threadpool on Microsoft implementations
-    // so we need to avoid it as much a possible
+    // so we need to avoid it as much as reasonably possible
     sleep(500);
 
     dispatch_events->clear();
     delete dispatch_events;
+
+    for (auto itr = mapped_events->begin(); itr != mapped_events->end(); itr++) {
+        if (itr->second != nullptr)
+            delete itr->second;
+    }
     delete mapped_events;
 
     thread_queue->clear();
@@ -215,3 +228,7 @@ void Dispatcher::Terminate() {
     instance = nullptr;
     Dispatcher::initialized = false;
 }
+
+int Dispatcher::ThreadQueueSize() { return in_queue_count; }
+int Dispatcher::NonSerialQueueSize() { return nonserial_queue_count; }
+bool Dispatcher::Active() { return processing_count > 0; }

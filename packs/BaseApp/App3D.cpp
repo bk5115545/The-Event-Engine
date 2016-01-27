@@ -31,7 +31,7 @@ App3D::~App3D() {
 bool App3D::initialize(std::shared_ptr<Renderer> rend) {
     renderer = std::dynamic_pointer_cast<OpenGLRenderer>(rend);
 
-    camera = new GlCamera();
+    camera = new GLCamera();
     camera->initialize();
 
     renderer->set_camera(camera);

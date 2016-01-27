@@ -25,7 +25,7 @@ class OpenGLRenderer : public Renderer {
   protected:
     SDL_Window* window;
     SDL_GLContext context;
-    GlCamera* camera;
+    GLCamera* camera;
     GLuint mvp_uniform;
     GLuint vertex_array_id;
 

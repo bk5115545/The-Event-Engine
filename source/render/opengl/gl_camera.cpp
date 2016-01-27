@@ -14,17 +14,22 @@
 
 #include "util/Definitions.h"
 
-bool GlCamera::initialize() {
+GLCamera::~GLCamera() {
+    delete input_subscriber;
+    delete update_subscriber;
+}
+
+bool GLCamera::initialize() {
     velocity = 1;
     up_vector = glm::vec3(0.0, 1.0, 0.0);
     position = glm::vec3(4, 3, -3);
 
-    Subscriber* input_subscriber = new Subscriber(this);
-    input_subscriber->method = std::bind(&GlCamera::onInput, this, std::placeholders::_1);
+    input_subscriber = new Subscriber(this);
+    input_subscriber->method = std::bind(&GLCamera::onInput, this, std::placeholders::_1);
     Dispatcher::GetInstance()->AddEventSubscriber(input_subscriber, "EVENT_INPUT");
 
-    Subscriber* update_subscriber = new Subscriber(this);
-    update_subscriber->method = std::bind(&GlCamera::update, this, std::placeholders::_1);
+    update_subscriber = new Subscriber(this);
+    update_subscriber->method = std::bind(&GLCamera::update, this, std::placeholders::_1);
     Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_COMPONENT_UPDATE");
 
     tracked_keys[SDLK_UP] = false;
@@ -35,12 +40,12 @@ bool GlCamera::initialize() {
     return true;
 }
 
-void GlCamera::onInput(std::shared_ptr<void> event) {
+void GLCamera::onInput(std::shared_ptr<void> event) {
     std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
     tracked_keys[pair->first] = pair->second;
 }
 
-void GlCamera::update(std::shared_ptr<void> event_data) {
+void GLCamera::update(std::shared_ptr<void> event_data) {
     float32 delta_time = *(float*)event_data.get();
 
     float32 z_movement = 0;
@@ -69,4 +74,4 @@ void GlCamera::update(std::shared_ptr<void> event_data) {
     vp_matrix = projection * view;
 }
 
-glm::mat4 GlCamera::get_vp_matrix() { return vp_matrix; }
+glm::mat4 GLCamera::get_vp_matrix() { return vp_matrix; }

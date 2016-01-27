@@ -89,4 +89,4 @@ int OpenGLRenderer::get_width() { return width; }
 
 int OpenGLRenderer::get_height() { return height; }
 
-void OpenGLRenderer::set_camera(Camera* cam) { camera = (GlCamera*)cam; }
+void OpenGLRenderer::set_camera(Camera* cam) { camera = (GLCamera*)cam; }

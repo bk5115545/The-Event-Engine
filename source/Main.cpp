@@ -59,9 +59,7 @@ class EngineCoreMinimal {
             Dispatcher::GetInstance()->Pump();
             Dispatcher::GetInstance()->NonSerialProcess();
 
-            // TODO(bk515545)
-            // Need to add actual wait functionality into Dispatcher
-            while (Dispatcher::GetInstance()->QueueSize() > 0) {
+            while (Dispatcher::GetInstance()->ThreadQueueSize() > 0 || Dispatcher::GetInstance()->Active()) {
                 Dispatcher::GetInstance()->Pump();
                 Dispatcher::GetInstance()->NonSerialProcess();
                 sleep(1);
@@ -91,7 +89,7 @@ int main(int argc, char* argv[]) {
     // Run the engine
     engine.main_loop();
 
-    while (Dispatcher::GetInstance()->QueueSize() > 0) {
+    while (Dispatcher::GetInstance()->ThreadQueueSize() > 0 || Dispatcher::GetInstance()->Active()) {
         Dispatcher::GetInstance()->Pump();
         Dispatcher::GetInstance()->NonSerialProcess();
         sleep(600);

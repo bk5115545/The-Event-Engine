@@ -8,6 +8,7 @@
 
 #include <thread>
 #include <list>
+#include <atomic>
 
 // Begin Dispatcher Class Section
 
@@ -39,6 +40,10 @@ class Dispatcher {
     static std::mutex mapped_event_mutex;
     static std::condition_variable thread_signal;
 
+    static std::atomic_int processing_count;
+    static std::atomic_int in_queue_count;
+    static std::atomic_int nonserial_queue_count;
+
     Dispatcher(const Dispatcher&);            // disallow copying
     Dispatcher& operator=(const Dispatcher&); // disallow copying
 
@@ -58,9 +63,9 @@ class Dispatcher {
     void Pump();
     void NonSerialProcess();
 
-    // TODO(bk5115545) Move into class (or maybe remove)
-    // Not entirely threadsafe but as long as the compiler respects the implicit inline then it will work fine
-    int QueueSize() { return static_cast<int>(thread_queue->size()); }
+    int ThreadQueueSize();
+    int NonSerialQueueSize();
+    bool Active();
 
   private:
     static void ThreadProcess();
