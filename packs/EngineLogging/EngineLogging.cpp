@@ -6,6 +6,9 @@
 #include "event_system/Dispatcher.h"
 
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
 
 class EngineLogging {
   public:
@@ -23,16 +26,25 @@ class EngineLogging {
         ~EngineLoggingStaticInit() { delete init_subscriber; }
 
         void init(std::shared_ptr<void> event_data) {
+            std::cout << "Logging Provider started." << std::endl;
             ProviderRegistry::GetInstance()->provide("Engine Logging", std::shared_ptr<Provider>(this));
         }
 
         std::shared_ptr<void> provide(std::shared_ptr<void> event_data) {
-            try {
-                // throw std::exception;
-            } catch (std::exception e) {
-                // e.printStackTrace();
-                std::cout << "ERROR" << std::endl;
+
+            std::shared_ptr<std::vector<std::string>> overrun_city =
+                std::static_pointer_cast<std::vector<std::string>>(event_data);
+
+            std::stringstream threadsafe_stream;
+            for (std::string str : *overrun_city) {
+                threadsafe_stream << str << "\t";
             }
+            threadsafe_stream << std::endl;
+            std::cout << threadsafe_stream.rdbuf();
+        }
+
+        std::shared_ptr<void> get_parameter_data() {
+            return std::make_shared<int>(1); // we require 1 argument
         }
     };
 

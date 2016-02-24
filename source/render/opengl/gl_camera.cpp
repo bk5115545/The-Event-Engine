@@ -45,6 +45,8 @@ bool GLCamera::initialize() {
 void GLCamera::onInput(std::shared_ptr<void> event) {
     std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
     tracked_keys[pair->first] = pair->second;
+
+    std::cout << "gl_camera recieved EVENT_INPUT" << std::endl;
 }
 
 void GLCamera::update(std::shared_ptr<void> event_data) {

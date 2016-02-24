@@ -79,8 +79,8 @@ void App3D::run(std::shared_ptr<void> event_data) {
 void App3D::update(std::shared_ptr<void> event_data) {
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
-    std::cout << "FPS: " << 1 / *(float*)(event_data.get())
-              << "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\t"
-              << Dispatcher::GetInstance()->NonSerialQueueSize() << "\t"
-              << Dispatcher::GetInstance()->ProcessingThreads() << "\n";
+    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << std::endl;
+    //<< "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\t"
+    //<< Dispatcher::GetInstance()->NonSerialQueueSize() << "\t"
+    //<< Dispatcher::GetInstance()->ProcessingThreads() << "\n";
 }

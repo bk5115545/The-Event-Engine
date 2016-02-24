@@ -8,7 +8,6 @@
 
 #include <thread>
 #include <list>
-#include <atomic>
 
 // Begin Dispatcher Class Section
 
@@ -41,10 +40,6 @@ class Dispatcher {
     static std::mutex mapped_event_mutex;
     static std::condition_variable thread_signal;
 
-    static std::atomic_int processing_count;
-    static std::atomic_int in_queue_count;
-    static std::atomic_int nonserial_queue_count;
-
     Dispatcher(const Dispatcher&);            // disallow copying
     Dispatcher& operator=(const Dispatcher&); // disallow copying
 
@@ -64,11 +59,8 @@ class Dispatcher {
     void Pump();
     void NonSerialProcess();
 
-    int ThreadQueueSize();
-    int NonSerialQueueSize();
-    int ProcessingThreads();
-    bool Active();
+    unsigned int GetApproximateSize() { return thread_queue->size(); }
 
   private:
-    static void ThreadProcess();
+    static void ThreadProcess(int thread_id);
 };

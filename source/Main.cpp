@@ -1,10 +1,12 @@
 // Copyright 2015 Casey Megginson and Blaise Koch
 
 #define GLM_FORCE_RADIANS
+#undef _GLIBCXX_ATOMIC_BUILTINS
 
 #include <ctime>
 #include <iostream>
 #include <string>
+#include <vector>
 
 // Threaded Events
 #include "event_system/ProviderRegistry.h"
@@ -61,16 +63,21 @@ class EngineCoreMinimal {
             Dispatcher::GetInstance()->Pump();
             Dispatcher::GetInstance()->NonSerialProcess();
 
-            while (Dispatcher::GetInstance()->ThreadQueueSize() > 10000) {
-                sleep(1);
-                std::cout << "Dispatcher threads aren't fast enough so sleeping for 1ms." << std::endl;
+            while (Dispatcher::GetInstance()->GetApproximateSize() > 1000) {
+                Dispatcher::GetInstance()->Pump();
+                Dispatcher::GetInstance()->NonSerialProcess();
+                // sleep(1);
             }
 
-            // if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
-            //    ProviderRegistry::GetInstance()
-            //        ->lookup("Engine Logging")
-            //        ->provide(std::make_shared<std::string>(std::string("Logging in main_loop.")));
-            //}
+            if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
+                // std::vector<std::string> message;
+                // message.push_back(std::string("Main.cpp"));
+                // message.push_back(std::string("Test of logging."));
+
+                // ProviderRegistry::GetInstance()
+                //    ->lookup("Engine Logging")
+                //    ->provide(std::make_shared<std::vector<std::string>>(message));
+            }
         }
     }
 
@@ -90,10 +97,10 @@ int main(int argc, char* argv[]) {
 
     EngineCoreMinimal engine = EngineCoreMinimal();
 
-    // Dispatcher::GetInstance()->DispatchImmediate("PROVIDER_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
-    // Dispatcher::GetInstance()->Pump();
-    // Dispatcher::GetInstance()->NonSerialProcess();
-    // sleep(1000);
+    Dispatcher::GetInstance()->DispatchImmediate("PROVIDER_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
+    Dispatcher::GetInstance()->Pump();
+    Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(1000);
 
     Dispatcher::GetInstance()->DispatchImmediate("EVENT_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
     Dispatcher::GetInstance()->Pump();
@@ -106,12 +113,9 @@ int main(int argc, char* argv[]) {
     // Run the engine
     engine.main_loop();
 
-    // Allow objects to respond to EVENT_SHUTDOWN_ALL
-    while (Dispatcher::GetInstance()->ThreadQueueSize() > 0 || Dispatcher::GetInstance()->Active()) {
-        Dispatcher::GetInstance()->Pump();
-        Dispatcher::GetInstance()->NonSerialProcess();
-        sleep(600);
-    }
+    Dispatcher::GetInstance()->Pump();
+    Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(600);
 
     Dispatcher::GetInstance()->Terminate();
 
