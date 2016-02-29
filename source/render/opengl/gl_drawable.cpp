@@ -3,13 +3,17 @@
 GlDrawable::GlDrawable(Actor* owner) {
     this->owner = owner;
 
-    Subscriber* s = new Subscriber(this);
-    s->method = std::bind(&GlDrawable::process, this, std::placeholders::_1);
+    Subscriber* s = new Subscriber(this, Function_Cast(&GlDrawable::process));
     Dispatcher::GetInstance()->AddEventSubscriber(s, "EVENT_COMPONENT_UPDATE");
     subscribers.push_back(s);
 }
 
-GlDrawable::~GlDrawable() { owner = nullptr; }
+GlDrawable::~GlDrawable() {
+    owner = nullptr;
+    for (Subscriber* sub : subscribers) {
+        delete sub;
+    }
+}
 
 void GlDrawable::initialize(std::shared_ptr<Renderer> renderer, std::shared_ptr<GLModel> model) {
     ((OpenGLRenderer*)renderer.get())->addModel(this);

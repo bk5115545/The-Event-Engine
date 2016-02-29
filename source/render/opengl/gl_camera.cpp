@@ -26,12 +26,10 @@ bool GLCamera::initialize() {
     up_vector = glm::vec3(0.0, 1.0, 0.0);
     position = glm::vec3(0, 5, -10);
 
-    input_subscriber = new Subscriber(this);
-    input_subscriber->method = std::bind(&GLCamera::onInput, this, std::placeholders::_1);
+    input_subscriber = new Subscriber(this, Function_Cast(&GLCamera::onInput));
     Dispatcher::GetInstance()->AddEventSubscriber(input_subscriber, "EVENT_INPUT");
 
-    update_subscriber = new Subscriber(this);
-    update_subscriber->method = std::bind(&GLCamera::update, this, std::placeholders::_1);
+    update_subscriber = new Subscriber(this, Function_Cast(&GLCamera::update));
     Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_COMPONENT_UPDATE");
 
     tracked_keys[SDLK_UP] = false;

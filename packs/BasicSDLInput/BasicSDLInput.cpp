@@ -19,8 +19,7 @@ class BasicSDLInput {
       public:
         BasicSDLInputStaticInit() {
             SDL_Init(0);
-            init_subscriber = new Subscriber(this, false);
-            init_subscriber->method = std::bind(&BasicSDLInputStaticInit::init, this, std::placeholders::_1);
+            init_subscriber = new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::init), false);
             // Lets use the late event to see if something else initialized SDL for us
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_APP_INIT_SUCCESS_LATE");
         }
@@ -46,17 +45,15 @@ class BasicSDLInput {
             if (sdl_inited != 0) {
                 std::cout << "BasicSDLInput is controlling SDL Events" << std::endl;
 
-                Subscriber* translating_subscriber = new Subscriber(this, false);
-                translating_subscriber->method =
-                    std::bind(&BasicSDLInputStaticInit::translate, this, std::placeholders::_1);
+                Subscriber* translating_subscriber =
+                    new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::translate), false);
                 Dispatcher::GetInstance()->AddEventSubscriber(translating_subscriber, "EVENT_SDL_EVENT");
             }
             // else {
             std::cout << "BasicSDLInput is translating SDL Events" << std::endl;
 
             // Otherwise lets control the PollEvent loop
-            Subscriber* sdl_event_control = new Subscriber(this);
-            sdl_event_control->method = std::bind(&BasicSDLInputStaticInit::event_loop, this, std::placeholders::_1);
+            Subscriber* sdl_event_control = new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::event_loop));
             Dispatcher::GetInstance()->AddEventSubscriber(sdl_event_control, "EVENT_APP_RUN");
             //}
         }

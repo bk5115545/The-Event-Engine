@@ -11,8 +11,7 @@ class BaseLoader {
     class BaseLoaderStaticInit {
       public:
         BaseLoaderStaticInit() {
-            Subscriber* init_subscriber = new Subscriber(this, false);
-            init_subscriber->method = std::bind(&BaseLoaderStaticInit::init, this, std::placeholders::_1);
+            Subscriber* init_subscriber = new Subscriber(this, Function_Cast(&BaseLoaderStaticInit::init), false);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_APP_INIT_SUCCESS");
         }
 

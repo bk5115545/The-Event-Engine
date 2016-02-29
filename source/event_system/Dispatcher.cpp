@@ -104,9 +104,7 @@ void Dispatcher::NonSerialProcess() {
         nonserial_queue->pop_front();
 
         try {
-            if (work.first->method == NULL)
-                continue;
-            work.first->method(work.second);
+            work.first->call(work.second);
         } catch (std::string msg) {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
             std::cerr << msg << std::endl;
@@ -115,12 +113,14 @@ void Dispatcher::NonSerialProcess() {
 }
 
 void Dispatcher::ThreadProcess(int thread_id_passed) {
-    const thread_local int cache_size = 1;
-    const thread_local int thread_id = thread_id_passed;
+    const int cache_size = 1;
+    const int thread_id = thread_id_passed;
+    UNUSED(thread_id);
+
     // There is a lot of issues with threads blocking on the thread_queue_mutex lock
     // if each thread had a list of jobs to do then this wouldn't be nearly as big of an issue
-    thread_local std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache;
-    thread_local std::pair<Subscriber*, std::shared_ptr<void>> work;
+    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache;
+    std::pair<Subscriber*, std::shared_ptr<void>> work;
 
     while (running) {
         // std::cerr << "Thread acquire lock." << std::endl;
@@ -170,11 +170,7 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
             try {
                 // std::cerr << "Thread try_call." << std::endl;
                 work = thread_cache.at(i);
-                if (!work.first->method) {
-                    std::cerr << "Subscriber with NULL method was almost called." << std::endl;
-                    continue;
-                }
-                work.first->method(work.second);
+                work.first->call(work.second);
             } catch (std::string e) {
                 std::cerr << "Exception thrown by function called by Dispatcher Threads." << std::endl;
                 std::cerr << e << std::endl;
@@ -191,6 +187,7 @@ void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<vo
 }
 
 void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
+    std::cout << "DispatchImmediage " << eventID << "\t" << eventData << std::endl;
     if (mapped_events->count(eventID) == 0) {
         mapped_events->emplace(eventID, new std::list<Subscriber*>());
         return;

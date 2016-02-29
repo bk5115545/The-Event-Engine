@@ -13,15 +13,17 @@ class BaseApp {
 
       public:
         BaseAppStaticInit() {
-            init_subscriber = new Subscriber(this, false);
-            init_subscriber->method = std::bind(&BaseAppStaticInit::init, this, std::placeholders::_1);
+            init_subscriber = new Subscriber(this, Function_Cast(&BaseAppStaticInit::init), false);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_RENDER_INIT_SUCCESS");
         }
 
         ~BaseAppStaticInit() { delete init_subscriber; }
 
         void init(std::shared_ptr<void> event_data) {
+            std::cout << "BaseApp::Init " << event_data << std::endl;
+
             app = std::shared_ptr<App3D>(new App3D());
+
             if (!app->initialize(std::static_pointer_cast<Renderer>(event_data))) {
                 printf("App could not Initialize!");
                 exit(1);

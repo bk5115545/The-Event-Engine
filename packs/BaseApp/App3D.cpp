@@ -29,10 +29,14 @@ App3D::~App3D() {
 }
 
 bool App3D::initialize(std::shared_ptr<Renderer> rend) {
+    std::cout << "App3D::initialize1 " << renderer << std::endl;
+
     renderer = std::dynamic_pointer_cast<OpenGLRenderer>(rend);
 
     camera = new GLCamera();
     camera->initialize();
+
+    std::cout << "App3D::initialize2 " << renderer << std::endl;
 
     renderer->set_camera(camera);
 
@@ -42,8 +46,7 @@ bool App3D::initialize(std::shared_ptr<Renderer> rend) {
     timer = new Timer();
     timer->start();
 
-    Subscriber* run_subscriber = new Subscriber(this, false);
-    run_subscriber->method = std::bind(&App3D::run, this, std::placeholders::_1);
+    Subscriber* run_subscriber = new Subscriber(this, Function_Cast(&App3D::run), false);
     Dispatcher::GetInstance()->AddEventSubscriber(run_subscriber, "EVENT_APP_RUN");
 
     return true;

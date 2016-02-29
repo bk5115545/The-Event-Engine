@@ -22,14 +22,14 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
     # Compiler options for GCC and Clang on Linus or OSX
 
     # Use C++ 14
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -pthread -pg")
 
     # Set warning levels
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wdouble-promotion -Wno-unknown-pragmas")
 
     # Set debug and release flags
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE} -O2")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE} -O0")
 
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
     # Compiler options for MSVC on Windows

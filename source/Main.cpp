@@ -26,12 +26,10 @@ class EngineCoreMinimal {
 
   public:
     EngineCoreMinimal() {
-        Subscriber* ready_subscriber = new Subscriber(this, false);
-        ready_subscriber->method = std::bind(&EngineCoreMinimal::app_ready, this, std::placeholders::_1);
+        Subscriber* ready_subscriber = new Subscriber(this, Function_Cast(&EngineCoreMinimal::app_ready), false);
         Dispatcher::GetInstance()->AddEventSubscriber(ready_subscriber, "EVENT_APP_READY");
 
-        Subscriber* shutdown_subscriber = new Subscriber(this, false);
-        shutdown_subscriber->method = std::bind(&EngineCoreMinimal::all_shutdown, this, std::placeholders::_1);
+        Subscriber* shutdown_subscriber = new Subscriber(this, Function_Cast(&EngineCoreMinimal::all_shutdown), false);
         Dispatcher::GetInstance()->AddEventSubscriber(shutdown_subscriber, "EVENT_ALL_SHUTDOWN");
     }
 

@@ -18,8 +18,7 @@ class EngineLogging {
 
       public:
         EngineLoggingStaticInit() {
-            init_subscriber = new Subscriber(this, false);
-            init_subscriber->method = std::bind(&EngineLoggingStaticInit::init, this, std::placeholders::_1);
+            init_subscriber = new Subscriber(this, Function_Cast(&EngineLoggingStaticInit::init), false);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "PROVIDER_INITIAL_HOOK");
         }
 
