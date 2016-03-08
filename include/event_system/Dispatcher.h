@@ -34,10 +34,10 @@ class Dispatcher {
 
     std::deque<std::thread*>* processing_threads; // using std::deque for constant time size() and O(1) random access
 
-    static std::mutex nonserial_queue_mutex;
-    static std::mutex dispatch_queue_mutex;
+    static std::recursive_mutex nonserial_queue_mutex;
+    static std::recursive_mutex dispatch_queue_mutex;
     static std::mutex thread_queue_mutex;
-    static std::mutex mapped_event_mutex;
+    static std::recursive_mutex mapped_event_mutex;
     static std::condition_variable thread_signal;
 
     Dispatcher(const Dispatcher&);            // disallow copying

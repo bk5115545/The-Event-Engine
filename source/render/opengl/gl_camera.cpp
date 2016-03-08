@@ -26,10 +26,10 @@ bool GLCamera::initialize() {
     up_vector = glm::vec3(0.0, 1.0, 0.0);
     position = glm::vec3(0, 5, -10);
 
-    input_subscriber = new Subscriber(this, Function_Cast(&GLCamera::onInput));
+    input_subscriber = new Subscriber(this, (SubscriptionFunction*)&GLCamera::onInput);
     Dispatcher::GetInstance()->AddEventSubscriber(input_subscriber, "EVENT_INPUT");
 
-    update_subscriber = new Subscriber(this, Function_Cast(&GLCamera::update));
+    update_subscriber = new Subscriber(this, (SubscriptionFunction*)&GLCamera::update);
     Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_COMPONENT_UPDATE");
 
     tracked_keys[SDLK_UP] = false;
@@ -41,13 +41,23 @@ bool GLCamera::initialize() {
 }
 
 void GLCamera::onInput(std::shared_ptr<void> event) {
-    std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
-    tracked_keys[pair->first] = pair->second;
-
     std::cout << "gl_camera recieved EVENT_INPUT" << std::endl;
+    std::lock_guard<std::mutex> lock(input_mutex);
+    std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
+    if (pair == nullptr) {
+        std::cout << "Null EVENT_INPUT in GLCamera::onInput" << std::endl;
+        return;
+    }
+    tracked_keys[pair->first] = pair->second;
 }
 
 void GLCamera::update(std::shared_ptr<void> event_data) {
+    std::cout << "gl_camera recieved EVENT_COMPONENT_UPDATE" << std::endl;
+    std::lock_guard<std::mutex> lock(update_mutex);
+    if (event_data.get() == nullptr) {
+        std::cout << "Empty time delta in GLCamera::update?" << std::endl;
+        return;
+    }
     float32 delta_time = *(float*)event_data.get();
 
     float32 z_movement = 0;
@@ -72,8 +82,8 @@ void GLCamera::update(std::shared_ptr<void> event_data) {
     // std::cout << position_.x << " " << position_.z << std::endl;
 
     projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.f);
-    glm::mat4 view = glm::lookAt(position, glm::vec3(0.0, 0.0, 0.0), up_vector);
-    vp_matrix = projection * view;
+    glm::mat4 v = glm::lookAt(position, glm::vec3(0.0, 0.0, 0.0), up_vector);
+    vp_matrix = projection * v;
 }
 
 glm::mat4 GLCamera::get_vp_matrix() { return vp_matrix; }

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <list>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -22,7 +22,7 @@ class App3D : public App {
     GLCamera* camera;
     GLModelStore* model_store;
 
-    std::list<Actor*> actors;
+    std::vector<Actor*> actors;
 
   public:
     App3D();

@@ -34,10 +34,10 @@ class BasicSDLInput {
             // if(sdl_inited & SDL_INIT_EVENTS == 0) {
             SDL_InitSubSystem(SDL_INIT_EVENTS);
             //}
-            if (sdl_inited & SDL_INIT_GAMECONTROLLER == 0) {
+            if ((sdl_inited & SDL_INIT_GAMECONTROLLER) == 0) {
                 SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER);
             }
-            if (sdl_inited & SDL_INIT_JOYSTICK == 0) {
+            if ((sdl_inited & SDL_INIT_JOYSTICK) == 0) {
                 SDL_InitSubSystem(SDL_INIT_JOYSTICK);
             }
 
@@ -82,9 +82,10 @@ class BasicSDLInput {
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, true)));
 
             } else if (sdl_event->type == SDL_KEYUP) {
-                Dispatcher::GetInstance()->DispatchImmediate(
-                    "EVENT_INPUT",
-                    std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, false)));
+                auto obj =
+                    std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, false));
+                Dispatcher::GetInstance()->DispatchImmediate("EVENT_INPUT", obj);
+                std::cout << "Dispatched EVENT_INPUT " << obj << std::endl;
             }
         }
     };
@@ -93,5 +94,5 @@ class BasicSDLInput {
     static BasicSDLInput::BasicSDLInputStaticInit init;
 };
 
-BasicSDLInput::BasicSDLInputStaticInit BasicSDLInput::init;
-static BasicSDLInput BASIC_SDL_INPUT_NORMAL_NAME;
+__attribute__((used)) BasicSDLInput::BasicSDLInputStaticInit BasicSDLInput::init;
+__attribute__((used)) static BasicSDLInput BASIC_SDL_INPUT_NORMAL_NAME;

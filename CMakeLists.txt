@@ -21,15 +21,35 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
     ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
     # Compiler options for GCC and Clang on Linus or OSX
 
-    # Use C++ 14
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y -pthread -pg")
+    # Use C++ 17 for std::shared_mutex
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -pthread -pg")
+
+    set(NORMAL_DEBUG
+        "-Wall"
+        "-Wextra"
+#        "-Wshadow"
+    )
+
+    set(EXTENDED_DEBUG
+        "-Wuseless-cast"
+        "-Wconditionally-supported"
+        "-Wno-unknown-pragmas"
+        "-Wreorder"
+        "-Wsuggest-attribute=const"
+        "-Wstack-protector"
+        "-Wfloat-equal"
+        "-Wdeprecated"
+    )
+
+    string(REPLACE ";" " " NORMAL_DEBUG "${NORMAL_DEBUG}")
+    string(REPLACE ";" " " EXTENDED_DEBUG "${EXTENDED_DEBUG}")
 
     # Set warning levels
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic -Wdouble-promotion -Wno-unknown-pragmas")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${NORMAL_DEBUG} ${EXTENDED_DEBUG}")
 
     # Set debug and release flags
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -g")
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE} -O0")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_DEBUG} -g -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} ${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "MSVC")
     # Compiler options for MSVC on Windows

@@ -19,10 +19,10 @@
 // Dispatcher Static Variables
 bool Dispatcher::initialized = false;
 bool Dispatcher::running = false;
-std::mutex Dispatcher::nonserial_queue_mutex;
-std::mutex Dispatcher::dispatch_queue_mutex;
+std::recursive_mutex Dispatcher::nonserial_queue_mutex;
+std::recursive_mutex Dispatcher::dispatch_queue_mutex;
 std::mutex Dispatcher::thread_queue_mutex;
-std::mutex Dispatcher::mapped_event_mutex;
+std::recursive_mutex Dispatcher::mapped_event_mutex;
 std::condition_variable Dispatcher::thread_signal;
 
 Dispatcher* Dispatcher::instance = nullptr;
@@ -57,7 +57,7 @@ void Dispatcher::Initialize() {
         running = true;
 
         // Adjust the thread count
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 4; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess, i);
             processing_threads->push_back(processing_thread);
         }
@@ -70,7 +70,7 @@ void Dispatcher::Pump() {
     if (!Dispatcher::running)
         return;
 
-    std::unique_lock<std::mutex> dispatchLock(dispatch_queue_mutex);
+    std::unique_lock<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
     try {
         for (auto i : *dispatch_events) {
             // try is needed to handle linux map implementations
@@ -93,17 +93,21 @@ void Dispatcher::Pump() {
     thread_signal.notify_all(); // it's possible we're in a pseudo-deadlock because the entire thread_queue
                                 // wasn't consumed in 1 pass of the thread pool
                                 // so wake up all the threads even if there are no new events to process
+                                // but there's probably events because you're using a high performance event library...
+    dispatch_events->clear();   // we queued them all for processing so clear the cache
 
     dispatchLock.unlock();
-    dispatch_events->clear(); // we queued them all for processing so clear the cache
 }
 
 void Dispatcher::NonSerialProcess() {
+    std::lock_guard<std::recursive_mutex> lock(nonserial_queue_mutex);
     while (nonserial_queue->size() > 0) {
-        auto work = nonserial_queue->front();
+        // NonSericalQueue::value_type work
+        std::pair<Subscriber*, std::shared_ptr<void>> work = nonserial_queue->front();
         nonserial_queue->pop_front();
 
         try {
+            std::cout << work.first << "\t" << work.second << std::endl;
             work.first->call(work.second);
         } catch (std::string msg) {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
@@ -113,14 +117,13 @@ void Dispatcher::NonSerialProcess() {
 }
 
 void Dispatcher::ThreadProcess(int thread_id_passed) {
-    const int cache_size = 1;
+    const int cache_size = 5;
     const int thread_id = thread_id_passed;
     UNUSED(thread_id);
 
     // There is a lot of issues with threads blocking on the thread_queue_mutex lock
     // if each thread had a list of jobs to do then this wouldn't be nearly as big of an issue
-    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache;
-    std::pair<Subscriber*, std::shared_ptr<void>> work;
+    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache; // a list of jobs to do
 
     while (running) {
         // std::cerr << "Thread acquire lock." << std::endl;
@@ -138,27 +141,21 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
             continue;
 
         unsigned int available = thread_queue->size() > cache_size - 1 ? cache_size : thread_queue->size() - 1;
-        // std::cout << "Thread " << thread_id << " is consuming " << available << " work items from global queue."
-        //   << std::endl;
 
         try {
-            /* // This is slow and not threadsafe
-            for (unsigned int i = 0; i < available; i++) {
-                thread_cache.push_back(thread_queue->front());
-                thread_queue->pop_front();
-                // std::cout << "Got event" << std::endl;
-            }
-            */
-
-            // new method to move work to the cache
+            // move work to the cache
             thread_cache.insert(thread_cache.begin(), std::make_move_iterator(thread_queue->begin()),
                                 std::make_move_iterator(min(thread_queue->begin() + available, thread_queue->end())));
 
             thread_queue->erase(thread_queue->begin(), min(thread_queue->end() + available, thread_queue->end() - 1));
+            thread_queue->shrink_to_fit(); // TODO(bk5115545) Find way to remove for performance reasons
 
         } catch (std::string e) {
-            std::cerr << "Exception thrown while waiting/getting work for Thread." << std::endl;
+            std::cerr << "Exception thrown while waiting/getting work for Thread.  " << available
+                      << " jobs possibly lost." << std::endl;
             std::cerr << e << std::endl;
+
+            thread_queue_mutex.unlock();
             continue;
         }
 
@@ -168,26 +165,28 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
 
         for (unsigned int i = 0; i < thread_cache.size() && i < available; i++) {
             try {
-                // std::cerr << "Thread try_call." << std::endl;
-                work = thread_cache.at(i);
+                // std::cerr << "Thread try_call try." << std::endl;
+                std::pair<Subscriber*, std::shared_ptr<void>>& work = thread_cache.at(i);
                 work.first->call(work.second);
+                // std::cerr << "Thread try_call success." << std::endl;
             } catch (std::string e) {
                 std::cerr << "Exception thrown by function called by Dispatcher Threads." << std::endl;
                 std::cerr << e << std::endl;
             }
         }
         thread_cache.clear();
+        thread_cache.shrink_to_fit(); // TODO(bk5115545) find way to remove for performance reasons
     }
 }
 
 void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<void> eventData) {
-    std::lock_guard<std::mutex> dispatchLock(dispatch_queue_mutex);
+    std::lock_guard<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
     dispatch_events->push_back(std::pair<EventType, std::shared_ptr<void>>(eventID, eventData));
     thread_signal.notify_one();
 }
 
 void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
-    std::cout << "DispatchImmediage " << eventID << "\t" << eventData << std::endl;
+    std::cout << "DispatchImmediate " << eventID << "\t" << eventData << std::endl;
     if (mapped_events->count(eventID) == 0) {
         mapped_events->emplace(eventID, new std::list<Subscriber*>());
         return;
@@ -203,11 +202,11 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
             continue;
         }
 
-        if ((*it)->serialized) {
+        if ((*it)->_serialized) {
             std::lock_guard<std::mutex> lock(thread_queue_mutex);
             thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
         } else {
-            std::lock_guard<std::mutex> lock2(nonserial_queue_mutex);
+            std::lock_guard<std::recursive_mutex> lock2(nonserial_queue_mutex);
             nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
         }
     }
@@ -216,7 +215,7 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
 }
 
 void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
-    if (mapped_events->count(event_id) < 1) {
+    if (mapped_events->count(event_id) == 0) {
         std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl;
         mapped_events->emplace(event_id, new std::list<Subscriber*>());
     }

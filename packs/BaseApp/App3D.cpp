@@ -7,17 +7,23 @@
 #include "util/CrossPlatform.h"
 
 App3D::App3D() {
-    // component_factories_ = nullptr;
     model_store = nullptr;
     timer = nullptr;
     camera = nullptr;
 }
 
 App3D::~App3D() {
-    // if (component_factories_ != nullptr) {
-    //     delete component_factories_;
-    //     component_factories_ = nullptr;
-    // }
+    for (int i = 0; i < actors.size(); i++) {
+        if (actors[i] != nullptr)
+            delete actors.at(i);
+        actors[i] = nullptr;
+    }
+
+    if (camera != nullptr) {
+        delete camera;
+        camera = nullptr;
+    }
+
     if (model_store != nullptr) {
         delete model_store;
         model_store = nullptr;
@@ -59,6 +65,8 @@ bool App3D::loadLevel(std::string file) {
 
     for (int i = 0; i < 1000; i++) {
         Actor* new_actor = new Actor();
+        actors.push_back(new_actor);
+
         GlDrawable* new_gldrawable = new GlDrawable(new_actor);
         new_gldrawable->initialize(renderer, model_store->search("cube"));
         Component* new_component = static_cast<Component*>(new_gldrawable);
@@ -80,10 +88,11 @@ void App3D::run(std::shared_ptr<void> event_data) {
 }
 
 void App3D::update(std::shared_ptr<void> event_data) {
+    if (event_data.get() == nullptr) {
+        std::cout << "Null time delta caught at App3D::update before it was repropogated." << std::endl;
+        return;
+    }
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
     std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << std::endl;
-    //<< "\t Dispatcher: " << Dispatcher::GetInstance()->ThreadQueueSize() << "\t"
-    //<< Dispatcher::GetInstance()->NonSerialQueueSize() << "\t"
-    //<< Dispatcher::GetInstance()->ProcessingThreads() << "\n";
 }

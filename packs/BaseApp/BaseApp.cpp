@@ -24,6 +24,13 @@ class BaseApp {
 
             app = std::shared_ptr<App3D>(new App3D());
 
+            std::shared_ptr<Renderer> renderer = std::static_pointer_cast<Renderer>(event_data);
+            if (renderer.get() == nullptr) {
+                std::cout << "Initialization Order Error: The Application tried to start without a renderer."
+                          << std::endl;
+                exit(1);
+            }
+
             if (!app->initialize(std::static_pointer_cast<Renderer>(event_data))) {
                 printf("App could not Initialize!");
                 exit(1);
@@ -40,5 +47,4 @@ class BaseApp {
 };
 
 BaseApp::BaseAppStaticInit BaseApp::init;
-
 static BaseApp BASE_APP_NORMAL_NAME;

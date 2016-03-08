@@ -14,11 +14,13 @@ class BaseRender {
       public:
         BaseRenderStaticInit() {
             std::cout << "BaseRender Constuctor " << std::endl;
-            Subscriber* init_subscriber = new Subscriber(this, Function_Cast(&BaseRenderStaticInit::init), false);
+            Subscriber* init_subscriber =
+                new Subscriber(this, (SubscriptionFunction*)&BaseRenderStaticInit::init, false);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_INITIAL_HOOK");
         }
 
-        void init(std::shared_ptr<void> event_data) {
+        __attribute__((used)) void init(std::shared_ptr<void> event_data) {
+
             int screen_width = 800;
             int screen_height = 600;
 
@@ -39,6 +41,6 @@ class BaseRender {
     static BaseRender::BaseRenderStaticInit init;
 };
 
-BaseRender::BaseRenderStaticInit BaseRender::init;
+__attribute__((used)) BaseRender::BaseRenderStaticInit BaseRender::init;
 
-static BaseRender BASE_RENDERER_NORMAL_NAME;
+__attribute__((used)) static BaseRender BASE_RENDERER_NORMAL_NAME;

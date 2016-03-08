@@ -30,6 +30,9 @@ class GLCamera : public Camera {
 
     std::map<int, bool> tracked_keys;
 
+    std::mutex update_mutex;
+    std::mutex input_mutex;
+
   public:
     ~GLCamera();
     bool initialize();

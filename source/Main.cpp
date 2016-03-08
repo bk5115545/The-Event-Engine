@@ -64,7 +64,7 @@ class EngineCoreMinimal {
             while (Dispatcher::GetInstance()->GetApproximateSize() > 1000) {
                 Dispatcher::GetInstance()->Pump();
                 Dispatcher::GetInstance()->NonSerialProcess();
-                // sleep(1);
+                sleep(1);
             }
 
             if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
@@ -103,10 +103,23 @@ int main(int argc, char* argv[]) {
     Dispatcher::GetInstance()->DispatchImmediate("EVENT_INITIAL_HOOK", std::shared_ptr<void>(nullptr));
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
-    sleep(1000);
+    sleep(100);
 
     Dispatcher::GetInstance()->Pump();
     Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(100);
+
+    Dispatcher::GetInstance()->Pump();
+    Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(100);
+
+    Dispatcher::GetInstance()->Pump();
+    Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(100);
+
+    Dispatcher::GetInstance()->Pump();
+    Dispatcher::GetInstance()->NonSerialProcess();
+    sleep(100);
 
     // Run the engine
     engine.main_loop();

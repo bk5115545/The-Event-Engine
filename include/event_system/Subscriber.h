@@ -7,36 +7,38 @@
 #include "event_system/Dispatcher.h"
 
 // These macros might need to be updated if the SubscriptionFunction spec is changed
-#define Function_Cast(func_ref) (void*) func_ref
-#define Function_UnCast(void_p) std::function<SubscriptionFunction>(*(SubscriptionFunction*)(void_p))
+#define Function_Cast(func_ref) (SubscriptionFunction*) func_ref
 
-typedef void(SubscriptionFunction(std::shared_ptr<void>));
+typedef void(SubscriptionFunction(void*, std::shared_ptr<void>));
+typedef void(CallTypeFunction(std::shared_ptr<void>));
 
 class Subscriber {
   public:
-    bool serialized = true;
+    void* _owner;
+    bool _serialized = true;
 
-    Subscriber(void* owner, void* func, bool serialized = true) {
-        this->owner = owner;
-        this->serialized = serialized;
-        this->method = Function_UnCast(func);
+    Subscriber(void* owner, SubscriptionFunction* func, bool serialized = true) {
+        this->_owner = owner;
+        this->_serialized = serialized;
+        this->method = func;
 
-        call = std::bind(&Subscriber::_call, this, std::placeholders::_1);
+        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
     }
-    Subscriber(Subscriber& other) {
-        this->owner = other.owner;
-        this->method = other.method;
-        this->serialized = other.serialized;
 
-        call = std::bind(&Subscriber::_call, this, std::placeholders::_1);
+    Subscriber(Subscriber& other) {
+        this->_owner = other._owner;
+        this->method = other.method;
+        this->_serialized = other._serialized;
+
+        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
     }
 
     Subscriber(Subscriber&& other) {
-        this->owner = other.owner;
+        this->_owner = other._owner;
         this->method = other.method;
-        this->serialized = other.serialized;
+        this->_serialized = other._serialized;
 
-        call = std::bind(&Subscriber::_call, this, std::placeholders::_1);
+        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
     }
 
     // Returns strongly typed std::bind objects with typed args and returns
@@ -53,19 +55,19 @@ class Subscriber {
     }
     */
 
-    std::function<SubscriptionFunction> call;
-
-    void* owner;
+    std::function<CallTypeFunction> call;
 
   protected:
     std::function<SubscriptionFunction> method;
     std::mutex concurrent_call_block;
 
     // This method needs to be updated if the SubscriptionFunction specification is changed
-    void _call(std::shared_ptr<void> arg) {
+    void _threadsafe_call(std::shared_ptr<void> arg) {
         std::lock_guard<std::mutex> lock(concurrent_call_block);
-        std::cout << "_call1 " << arg << std::endl;
-        method(arg);
-        std::cout << "_call2 " << arg << std::endl;
+        // std::cout << "_call1 " << arg << std::endl;
+        method(_owner, arg);
+        // std::cout << "_call2 " << arg << std::endl;
     }
+
+    void _std_call(std::shared_ptr<void> arg) { method(_owner, arg); }
 };

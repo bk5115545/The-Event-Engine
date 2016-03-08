@@ -53,6 +53,5 @@ class EngineLogging {
     static EngineLogging::EngineLoggingStaticInit init;
 };
 
-EngineLogging::EngineLoggingStaticInit EngineLogging::init;
-
-static EngineLogging ENGINE_LOGGING_NORMAL_NAME;
+__attribute__((used)) EngineLogging::EngineLoggingStaticInit EngineLogging::init;
+__attribute__((used)) static EngineLogging ENGINE_LOGGING_NORMAL_NAME;

@@ -38,6 +38,5 @@ class BaseLoader {
     static BaseLoader::BaseLoaderStaticInit init;
 };
 
-BaseLoader::BaseLoaderStaticInit BaseLoader::init;
-
-static BaseLoader BASE_LOADER_NORMAL_NAME;
+__attribute__((used)) BaseLoader::BaseLoaderStaticInit BaseLoader::init;
+__attribute__((used)) static BaseLoader BASE_LOADER_NORMAL_NAME;
