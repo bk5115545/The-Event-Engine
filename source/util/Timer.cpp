@@ -9,9 +9,9 @@ void Timer::start() { start_ticks = std::chrono::high_resolution_clock::now(); }
 void Timer::reset() { start_ticks = std::chrono::high_resolution_clock::now(); }
 
 void Timer::update() {
-    delta_time = static_cast<float32>(std::chrono::duration_cast<std::chrono::duration<double>>(
-                                          std::chrono::high_resolution_clock::now() - start_ticks)
-                                          .count());
+    delta_time = static_cast<float>(std::chrono::duration_cast<std::chrono::duration<double>>(
+                                        std::chrono::high_resolution_clock::now() - start_ticks)
+                                        .count());
     start_ticks = std::chrono::high_resolution_clock::now();
 }
 

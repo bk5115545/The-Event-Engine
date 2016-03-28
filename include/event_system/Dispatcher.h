@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <deque>
@@ -18,11 +19,37 @@ class Subscriber;
 class Dispatcher {
 
   private:
+    /*
+  template <typename T, typename K> class PrivatePair {
+    public:
+      T first;
+      K second;
+      using value_type = {T, K};
+
+      PrivatePair(T lhs, K rhs) {
+          this->first = lhs;
+          this->second = rhs;
+      }
+
+      PrivatePair(PrivatePair& pp) {
+          static_assert(this->value_type == pp->value_type, "Invalid PrivatePair copy");
+          this->first = pp.lhs;
+          this->second = pp.rhs;
+      }
+
+      PrivatePair(PrivatePair&& pp) {
+          static_assert(this->value_type == pp->value_type, "Invalid PrivatePair copy");
+          this->first = pp.lhs;
+          this->second = pp.rhs;
+      }
+  };
+  */
+  private:
     Dispatcher();
     void Initialize();
 
-    static bool initialized;
-    static bool running;
+    static std::atomic<bool> initialized;
+    static std::atomic<bool> running;
 
     static Dispatcher* instance;
 
@@ -36,9 +63,9 @@ class Dispatcher {
 
     static std::recursive_mutex nonserial_queue_mutex;
     static std::recursive_mutex dispatch_queue_mutex;
-    static std::mutex thread_queue_mutex;
+    static std::recursive_mutex thread_queue_mutex;
     static std::recursive_mutex mapped_event_mutex;
-    static std::condition_variable thread_signal;
+    static std::condition_variable_any thread_signal;
 
     Dispatcher(const Dispatcher&);            // disallow copying
     Dispatcher& operator=(const Dispatcher&); // disallow copying

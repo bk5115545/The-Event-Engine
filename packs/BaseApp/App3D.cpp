@@ -94,5 +94,5 @@ void App3D::update(std::shared_ptr<void> event_data) {
     }
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
-    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << std::endl;
+    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << "\r";
 }

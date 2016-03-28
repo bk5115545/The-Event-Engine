@@ -1,14 +1,14 @@
 #include <memory>
 
-#include "event_system/Provider.h"
-#include "event_system/ProviderRegistry.h"
-#include "event_system/Subscriber.h"
-#include "event_system/Dispatcher.h"
-
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "event_system/Provider.h"
+#include "event_system/ProviderRegistry.h"
+#include "event_system/Subscriber.h"
+#include "event_system/Dispatcher.h"
 
 class EngineLogging {
   public:
@@ -25,7 +25,7 @@ class EngineLogging {
         ~EngineLoggingStaticInit() { delete init_subscriber; }
 
         void init(std::shared_ptr<void> event_data) {
-            std::cout << "Logging Provider started." << std::endl;
+            // std::cout << "Logging Provider started." << std::endl;
             ProviderRegistry::GetInstance()->provide("Engine Logging", std::shared_ptr<Provider>(this));
         }
 

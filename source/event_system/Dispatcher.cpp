@@ -1,6 +1,7 @@
 // Copyright Casey Megginsons and Blaise Koch 2015
 
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <deque>
@@ -17,13 +18,13 @@
 #include "util/CrossPlatform.h"
 
 // Dispatcher Static Variables
-bool Dispatcher::initialized = false;
-bool Dispatcher::running = false;
+std::atomic<bool> Dispatcher::initialized(false);
+std::atomic<bool> Dispatcher::running(false);
 std::recursive_mutex Dispatcher::nonserial_queue_mutex;
 std::recursive_mutex Dispatcher::dispatch_queue_mutex;
-std::mutex Dispatcher::thread_queue_mutex;
+std::recursive_mutex Dispatcher::thread_queue_mutex;
 std::recursive_mutex Dispatcher::mapped_event_mutex;
-std::condition_variable Dispatcher::thread_signal;
+std::condition_variable_any Dispatcher::thread_signal;
 
 Dispatcher* Dispatcher::instance = nullptr;
 std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::thread_queue;
@@ -45,7 +46,7 @@ Dispatcher* Dispatcher::GetInstance() {
 
 void Dispatcher::Initialize() {
     if (!initialized) {
-        initialized = true;
+        initialized.store(true);
 
         dispatch_events = new std::deque<std::pair<EventType, std::shared_ptr<void>>>();
         mapped_events = new std::map<EventType, std::list<Subscriber*>*>();
@@ -54,10 +55,10 @@ void Dispatcher::Initialize() {
 
         processing_threads = new std::deque<std::thread*>();
 
-        running = true;
+        running.store(true);
 
         // Adjust the thread count
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 8; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess, i);
             processing_threads->push_back(processing_thread);
         }
@@ -67,7 +68,7 @@ void Dispatcher::Initialize() {
 }
 
 void Dispatcher::Pump() {
-    if (!Dispatcher::running)
+    if (!running)
         return;
 
     std::unique_lock<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
@@ -75,7 +76,9 @@ void Dispatcher::Pump() {
         for (auto i : *dispatch_events) {
             // try is needed to handle linux map implementations
             try {
-                // handle microsoft map implementation
+                std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
+
+                // if is needed to handle microsoft map implementation
                 if (mapped_events->count(i.first) == 0) {
                     mapped_events->emplace(i.first, new std::list<Subscriber*>());
                     continue;
@@ -84,19 +87,31 @@ void Dispatcher::Pump() {
                 DispatchImmediate(i.first, i.second);
                 dispatchLock.lock();
             } catch (std::string msg) {
+                dispatchLock.lock();
             }
         }
     } catch (std::string message) {
         std::cerr << "Error in Dispatcher::Pump()" << std::endl << message << std::endl;
+
+        // we're in 2 states here, either the lock is already locked
+        // or the call to lock it is causing an exception
+        // dispatchLock.lock()
     }
 
     thread_signal.notify_all(); // it's possible we're in a pseudo-deadlock because the entire thread_queue
                                 // wasn't consumed in 1 pass of the thread pool
                                 // so wake up all the threads even if there are no new events to process
                                 // but there's probably events because you're using a high performance event library...
-    dispatch_events->clear();   // we queued them all for processing so clear the cache
 
-    dispatchLock.unlock();
+    dispatch_events->clear(); // we queued them all for processing so clear the cache
+
+    try {
+        // no idea if this can be called with the dispatchLock already unlocked but we don't want it
+        // to be stuck locked for sure
+        dispatchLock.unlock();
+    } catch (std::string message) {
+        std::cout << "DispatchLock.unlock called and threw exception: " << message << std::endl;
+    }
 }
 
 void Dispatcher::NonSerialProcess() {
@@ -104,10 +119,10 @@ void Dispatcher::NonSerialProcess() {
     while (nonserial_queue->size() > 0) {
         // NonSericalQueue::value_type work
         std::pair<Subscriber*, std::shared_ptr<void>> work = nonserial_queue->front();
-        nonserial_queue->pop_front();
+        nonserial_queue->pop_front(); // wait to invalidate reference until work is finished
 
         try {
-            std::cout << work.first << "\t" << work.second << std::endl;
+            // std::cout << work.first << "\t" << work.second << std::endl;
             work.first->call(work.second);
         } catch (std::string msg) {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
@@ -117,7 +132,7 @@ void Dispatcher::NonSerialProcess() {
 }
 
 void Dispatcher::ThreadProcess(int thread_id_passed) {
-    const int cache_size = 5;
+    const int cache_size = 100;
     const int thread_id = thread_id_passed;
     UNUSED(thread_id);
 
@@ -125,45 +140,53 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
     // if each thread had a list of jobs to do then this wouldn't be nearly as big of an issue
     std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache; // a list of jobs to do
 
+    // std::cerr << "Thread acquire lock." << std::endl;
+    thread_queue_mutex.lock();
+
     while (running) {
-        // std::cerr << "Thread acquire lock." << std::endl;
-        std::unique_lock<std::mutex> lock(thread_queue_mutex);
 
         while (running) {
             // std::cerr << "Thread release lock." << std::endl;
-            thread_signal.wait(lock);
+            thread_signal.wait(thread_queue_mutex);
             // std::cerr << "Thread awake." << std::endl;
             if (thread_queue->size() > 0)
                 break;
         }
 
-        if (!running)
+        if (!running) {
+            thread_queue_mutex.unlock();
             continue;
+        }
 
-        unsigned int available = thread_queue->size() > cache_size - 1 ? cache_size : thread_queue->size() - 1;
+        unsigned int available = thread_queue->size() > cache_size ? cache_size : thread_queue->size();
+        unsigned int allocated = 0;
+        bool erased = false;
 
         try {
             // move work to the cache
-            thread_cache.insert(thread_cache.begin(), std::make_move_iterator(thread_queue->begin()),
-                                std::make_move_iterator(min(thread_queue->begin() + available, thread_queue->end())));
-
-            thread_queue->erase(thread_queue->begin(), min(thread_queue->end() + available, thread_queue->end() - 1));
-            thread_queue->shrink_to_fit(); // TODO(bk5115545) Find way to remove for performance reasons
-
+            thread_cache.insert(thread_cache.begin(), thread_queue->begin(), thread_queue->begin() + available);
+            allocated = available;
+            thread_queue->erase(thread_queue->begin(), thread_queue->begin() + available);
+            erased = true;
         } catch (std::string e) {
             std::cerr << "Exception thrown while waiting/getting work for Thread.  " << available
                       << " jobs possibly lost." << std::endl;
             std::cerr << e << std::endl;
 
             thread_queue_mutex.unlock();
-            continue;
+            continue; // no jobs so lets just wait
+        }
+
+        if (allocated == available && !erased) {
+            std::cerr << "Could not erase " << available << " jobs from work queue.  They will be double processed."
+                      << std::endl;
         }
 
         // std::cout << "Pre thread explicit unlock." << std::endl;
         thread_queue_mutex.unlock();
         // std::cerr << "Thread post unlock." << std::endl;
 
-        for (unsigned int i = 0; i < thread_cache.size() && i < available; i++) {
+        for (unsigned int i = 0; i < thread_cache.size(); i++) {
             try {
                 // std::cerr << "Thread try_call try." << std::endl;
                 std::pair<Subscriber*, std::shared_ptr<void>>& work = thread_cache.at(i);
@@ -175,18 +198,17 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
             }
         }
         thread_cache.clear();
-        thread_cache.shrink_to_fit(); // TODO(bk5115545) find way to remove for performance reasons
     }
 }
 
 void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<void> eventData) {
     std::lock_guard<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
     dispatch_events->push_back(std::pair<EventType, std::shared_ptr<void>>(eventID, eventData));
-    thread_signal.notify_one();
 }
 
 void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
-    std::cout << "DispatchImmediate " << eventID << "\t" << eventData << std::endl;
+    // std::cout << "DispatchImmediate " << eventID << "\t" << eventData << std::endl;
+    std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
     if (mapped_events->count(eventID) == 0) {
         mapped_events->emplace(eventID, new std::list<Subscriber*>());
         return;
@@ -203,7 +225,7 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
         }
 
         if ((*it)->_serialized) {
-            std::lock_guard<std::mutex> lock(thread_queue_mutex);
+            std::lock_guard<std::recursive_mutex> lock(thread_queue_mutex);
             thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
         } else {
             std::lock_guard<std::recursive_mutex> lock2(nonserial_queue_mutex);
@@ -215,6 +237,7 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
 }
 
 void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
+    std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
     if (mapped_events->count(event_id) == 0) {
         std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl;
         mapped_events->emplace(event_id, new std::list<Subscriber*>());
@@ -230,12 +253,12 @@ std::list<Subscriber*> Dispatcher::GetAllSubscribers(const void* owner) {
 }
 
 void Dispatcher::Terminate() {
-    Dispatcher::running = false;
-
     // Notify threads to resume processing so they
     // terminate before the condition variable is uninitialized (avoid crash from microsoft)
-    thread_signal.notify_all();
+    running.store(false);
     for (std::thread* t : *processing_threads) {
+        thread_queue_mutex.unlock(); // we definitly don't own the mutex but screw it we're going to shutdown NOW
+        thread_signal.notify_all();
         t->join(); // should stop eventually...
         delete t;  // i'm pretty sure we need to shutdown the threads before we delete them
     }
@@ -262,5 +285,5 @@ void Dispatcher::Terminate() {
     delete nonserial_queue;
 
     instance = nullptr;
-    Dispatcher::initialized = false;
+    Dispatcher::initialized.store(false);
 }

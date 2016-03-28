@@ -46,7 +46,7 @@ class BasicSDLInput {
                 std::cout << "BasicSDLInput is controlling SDL Events" << std::endl;
 
                 Subscriber* translating_subscriber =
-                    new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::translate), false);
+                    new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::translate));
                 Dispatcher::GetInstance()->AddEventSubscriber(translating_subscriber, "EVENT_SDL_EVENT");
             }
             // else {
@@ -85,7 +85,7 @@ class BasicSDLInput {
                 auto obj =
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, false));
                 Dispatcher::GetInstance()->DispatchImmediate("EVENT_INPUT", obj);
-                std::cout << "Dispatched EVENT_INPUT " << obj << std::endl;
+                // std::cout << "Dispatched EVENT_INPUT " << obj << std::endl;
             }
         }
     };

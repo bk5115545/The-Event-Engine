@@ -22,7 +22,7 @@ class Subscriber {
         this->_serialized = serialized;
         this->method = func;
 
-        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
+        call = std::bind(&Subscriber::_std_call, this, std::placeholders::_1);
     }
 
     Subscriber(Subscriber& other) {
@@ -30,7 +30,7 @@ class Subscriber {
         this->method = other.method;
         this->_serialized = other._serialized;
 
-        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
+        call = std::bind(&Subscriber::_std_call, this, std::placeholders::_1);
     }
 
     Subscriber(Subscriber&& other) {
@@ -38,8 +38,10 @@ class Subscriber {
         this->method = other.method;
         this->_serialized = other._serialized;
 
-        call = std::bind(&Subscriber::_threadsafe_call, this, std::placeholders::_1);
+        call = std::bind(&Subscriber::_std_call, this, std::placeholders::_1);
     }
+
+    ~Subscriber() { _owner = nullptr; }
 
     // Returns strongly typed std::bind objects with typed args and returns
     // Need a way to store this so that Dispatcher can call it

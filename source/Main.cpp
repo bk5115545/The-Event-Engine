@@ -38,6 +38,7 @@ class EngineCoreMinimal {
         Dispatcher::GetInstance()->DispatchImmediate("EVENT_APP_INIT_SUCCESS_LATE", event_data);
         Dispatcher::GetInstance()->Pump();
         Dispatcher::GetInstance()->NonSerialProcess();
+        sleep(500);
         ready = true;
     }
 
@@ -53,7 +54,7 @@ class EngineCoreMinimal {
             std::cout << "Waiting on EVENT_APP_READY with std::shared_ptr<App> as argument." << std::endl;
             sleep(500);
         }
-
+        std::cout << "Start main_loop()." << std::endl;
         quit = false;
         while (!quit) {
             // Provide a way for packs to hook into the main loop
@@ -61,10 +62,10 @@ class EngineCoreMinimal {
             Dispatcher::GetInstance()->Pump();
             Dispatcher::GetInstance()->NonSerialProcess();
 
-            while (Dispatcher::GetInstance()->GetApproximateSize() > 1000) {
+            while (Dispatcher::GetInstance()->GetApproximateSize() > 2000) {
                 Dispatcher::GetInstance()->Pump();
                 Dispatcher::GetInstance()->NonSerialProcess();
-                sleep(1);
+                sleep(0); // hint to scheduler to yeild processor to other threads
             }
 
             if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {

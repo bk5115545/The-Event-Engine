@@ -13,7 +13,6 @@ class BaseRender {
 
       public:
         BaseRenderStaticInit() {
-            std::cout << "BaseRender Constuctor " << std::endl;
             Subscriber* init_subscriber =
                 new Subscriber(this, (SubscriptionFunction*)&BaseRenderStaticInit::init, false);
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_INITIAL_HOOK");
@@ -25,12 +24,10 @@ class BaseRender {
             int screen_height = 600;
 
             renderer = std::shared_ptr<OpenGLRenderer>(new OpenGLRenderer(screen_width, screen_height));
-            std::cout << "BaseRender::Init1 " << renderer << std::endl;
             if (!renderer->initialize()) {
                 printf("Graphics Device could not initialize!");
                 exit(1);
             }
-            std::cout << "BaseRender::Init2 " << renderer << std::endl;
             Dispatcher::GetInstance()->DispatchImmediate("EVENT_RENDER_INIT_SUCCESS", renderer);
         }
     };

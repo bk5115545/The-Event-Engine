@@ -41,7 +41,6 @@ bool GLCamera::initialize() {
 }
 
 void GLCamera::onInput(std::shared_ptr<void> event) {
-    std::cout << "gl_camera recieved EVENT_INPUT" << std::endl;
     std::lock_guard<std::mutex> lock(input_mutex);
     std::pair<int, bool>* pair = (std::pair<int, bool>*)event.get();
     if (pair == nullptr) {
@@ -52,7 +51,6 @@ void GLCamera::onInput(std::shared_ptr<void> event) {
 }
 
 void GLCamera::update(std::shared_ptr<void> event_data) {
-    std::cout << "gl_camera recieved EVENT_COMPONENT_UPDATE" << std::endl;
     std::lock_guard<std::mutex> lock(update_mutex);
     if (event_data.get() == nullptr) {
         std::cout << "Empty time delta in GLCamera::update?" << std::endl;
