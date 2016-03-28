@@ -5,8 +5,6 @@
 #include "event_system/Subscriber.h"
 
 Actor::Actor() {
-    unsigned int s = 7;
-    unsigned int* s2 = &s;
     pos = glm::vec3(rand() % 10, rand() % 10, rand() % 10);
 
     Subscriber* update_subscriber = new Subscriber(this, Function_Cast(&Actor::Update));
