@@ -22,10 +22,12 @@ void GlDrawable::initialize(std::shared_ptr<Renderer> renderer, std::shared_ptr<
 
 void GlDrawable::process(std::shared_ptr<void> delta_time) {
     UNUSED(delta_time);
+    std::lock_guard<std::mutex> model_lock(model_matrix_mutex);
     model_matrix = glm::translate(glm::mat4(1.0f), owner->get_position());
 }
 
 void GlDrawable::draw(glm::mat4 view_projection) {
+    std::lock_guard<std::mutex> model_lock(model_matrix_mutex);
     glm::mat4 model_view_projection = view_projection * model_matrix;
     model->draw(model_view_projection);
 }

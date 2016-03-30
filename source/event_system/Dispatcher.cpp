@@ -58,7 +58,7 @@ void Dispatcher::Initialize() {
         running.store(true);
 
         // Adjust the thread count
-        for (int i = 0; i < 8; i++) {
+        for (int i = 0; i < 7; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess, i);
             processing_threads->push_back(processing_thread);
         }
@@ -71,32 +71,53 @@ void Dispatcher::Pump() {
     if (!running)
         return;
 
-    std::unique_lock<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
+    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> serialized;
+    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> unserialized;
+
+    std::lock_guard<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
     try {
         for (auto i : *dispatch_events) {
             // try is needed to handle linux map implementations
             try {
-                std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
+                CheckKey(i.first);
 
-                // if is needed to handle microsoft map implementation
-                if (mapped_events->count(i.first) == 0) {
-                    mapped_events->emplace(i.first, new std::list<Subscriber*>());
-                    continue;
+                // DispatchImmediate(i.first, i.second);
+
+                // If there's nothing to deliver this event to just drop it
+                if (mapped_events->at(i.first)->size() == 0) {
+                    return;
                 }
-                dispatchLock.unlock();
-                DispatchImmediate(i.first, i.second);
-                dispatchLock.lock();
+
+                std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
+                for (auto it = mapped_events->at(i.first)->begin(); it != mapped_events->at(i.first)->end(); it++) {
+
+                    // Remove nullptr Subscriber* from the processing
+                    if (*it == nullptr) {
+                        it = mapped_events->at(i.first)->erase(it);
+                        continue;
+                    }
+
+                    if ((*it)->_serialized) {
+                        // thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+                        serialized.push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second));
+                    } else {
+                        // nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+                        unserialized.push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second));
+                    }
+                }
             } catch (std::string msg) {
-                dispatchLock.lock();
+                std::cerr << "Internal Logic error in Dispatcher::Pump()" << std::endl << msg << std::endl;
             }
         }
     } catch (std::string message) {
         std::cerr << "Error in Dispatcher::Pump()" << std::endl << message << std::endl;
-
-        // we're in 2 states here, either the lock is already locked
-        // or the call to lock it is causing an exception
-        // dispatchLock.lock()
     }
+
+    std::lock_guard<std::recursive_mutex> thread_queue_lock(thread_queue_mutex);
+    thread_queue->insert(thread_queue->end(), serialized.begin(), serialized.end());
+
+    std::lock_guard<std::recursive_mutex> nonserial_queue_lock(nonserial_queue_mutex);
+    nonserial_queue->insert(nonserial_queue->end(), unserialized.begin(), unserialized.end());
 
     thread_signal.notify_all(); // it's possible we're in a pseudo-deadlock because the entire thread_queue
                                 // wasn't consumed in 1 pass of the thread pool
@@ -104,14 +125,6 @@ void Dispatcher::Pump() {
                                 // but there's probably events because you're using a high performance event library...
 
     dispatch_events->clear(); // we queued them all for processing so clear the cache
-
-    try {
-        // no idea if this can be called with the dispatchLock already unlocked but we don't want it
-        // to be stuck locked for sure
-        dispatchLock.unlock();
-    } catch (std::string message) {
-        std::cout << "DispatchLock.unlock called and threw exception: " << message << std::endl;
-    }
 }
 
 void Dispatcher::NonSerialProcess() {
@@ -132,7 +145,7 @@ void Dispatcher::NonSerialProcess() {
 }
 
 void Dispatcher::ThreadProcess(int thread_id_passed) {
-    const int cache_size = 100;
+    const int cache_size = 5;
     const int thread_id = thread_id_passed;
     UNUSED(thread_id);
 
@@ -208,17 +221,16 @@ void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<vo
 
 void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
     // std::cout << "DispatchImmediate " << eventID << "\t" << eventData << std::endl;
-    std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
-    if (mapped_events->count(eventID) == 0) {
-        mapped_events->emplace(eventID, new std::list<Subscriber*>());
-        return;
-    }
+    CheckKey(eventID);
 
+    // If there's nothing to deliver this event to just drop it
     if (mapped_events->at(eventID)->size() == 0) {
         return;
     }
 
     for (auto it = mapped_events->at(eventID)->begin(); it != mapped_events->at(eventID)->end(); it++) {
+
+        // Remove nullptr Subscriber* from the processing
         if (*it == nullptr) {
             it = mapped_events->at(eventID)->erase(it);
             continue;
@@ -238,10 +250,7 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
 
 void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
     std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
-    if (mapped_events->count(event_id) == 0) {
-        std::cerr << "Dispatcher --->  Dynamically allocating list for EventID " << event_id << "." << std::endl;
-        mapped_events->emplace(event_id, new std::list<Subscriber*>());
-    }
+    CheckKey(event_id);
     mapped_events->at(event_id)->push_back(requestor);
 }
 

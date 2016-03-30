@@ -63,7 +63,7 @@ void App3D::reset() {}
 bool App3D::loadLevel(std::string file) {
     UNUSED(file);
 
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 100; i++) {
         Actor* new_actor = new Actor();
         actors.push_back(new_actor);
 
@@ -94,5 +94,6 @@ void App3D::update(std::shared_ptr<void> event_data) {
     }
     Dispatcher::GetInstance()->DispatchEvent("EVENT_COMPONENT_UPDATE", event_data);
 
-    std::cout << "FPS: " << 1 / *(float*)(event_data.get()) << "\r";
+    std::cout << "Frame Time: " << *(float*)(event_data.get()) * 1000 << " FPS: " << 1 / *(float*)(event_data.get())
+              << "\r";
 }

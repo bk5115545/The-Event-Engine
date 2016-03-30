@@ -2,6 +2,8 @@
 
 #define GLM_FORCE_RADIANS
 
+#include <mutex>
+
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 #include <glm/mat4x4.hpp>
@@ -25,6 +27,7 @@ class GlDrawable : public Component {
     Actor* owner;
     std::vector<Subscriber*> subscribers;
 
+    std::mutex model_matrix_mutex;
     glm::mat4 model_matrix;
 
     std::shared_ptr<GLModel> model;

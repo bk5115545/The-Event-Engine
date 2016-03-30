@@ -19,32 +19,6 @@ class Subscriber;
 class Dispatcher {
 
   private:
-    /*
-  template <typename T, typename K> class PrivatePair {
-    public:
-      T first;
-      K second;
-      using value_type = {T, K};
-
-      PrivatePair(T lhs, K rhs) {
-          this->first = lhs;
-          this->second = rhs;
-      }
-
-      PrivatePair(PrivatePair& pp) {
-          static_assert(this->value_type == pp->value_type, "Invalid PrivatePair copy");
-          this->first = pp.lhs;
-          this->second = pp.rhs;
-      }
-
-      PrivatePair(PrivatePair&& pp) {
-          static_assert(this->value_type == pp->value_type, "Invalid PrivatePair copy");
-          this->first = pp.lhs;
-          this->second = pp.rhs;
-      }
-  };
-  */
-  private:
     Dispatcher();
     void Initialize();
 
@@ -69,6 +43,14 @@ class Dispatcher {
 
     Dispatcher(const Dispatcher&);            // disallow copying
     Dispatcher& operator=(const Dispatcher&); // disallow copying
+
+    inline void CheckKey(EventType eventID) {
+        std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
+        if (mapped_events->count(eventID) == 0) {
+            mapped_events->emplace(eventID, new std::list<Subscriber*>());
+            return;
+        }
+    }
 
   public:
     static Dispatcher* GetInstance();

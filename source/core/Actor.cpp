@@ -9,8 +9,10 @@ Actor::Actor() {
 
     Subscriber* update_subscriber = new Subscriber(this, Function_Cast(&Actor::Update));
     subscribers.push_back(update_subscriber);
+
     // simulate load
-    Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_APP_RUN");
+    for (int i = 0; i < 1000; i++)
+        Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_APP_RUN");
 }
 
 Actor::~Actor() {
