@@ -54,7 +54,8 @@ class EngineCoreMinimal {
             std::cout << "Waiting on EVENT_APP_READY with std::shared_ptr<App> as argument." << std::endl;
             sleep(500);
         }
-        std::cout << "Start main_loop()." << std::endl;
+        std::cout << "Start main_loop()." << std::endl << std::endl;
+        ;
         quit = false;
         while (!quit) {
             // Provide a way for packs to hook into the main loop

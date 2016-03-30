@@ -27,7 +27,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU" OR
     set(NORMAL_DEBUG
         "-Wall"
         "-Wextra"
-#        "-Wshadow"
+        "-Wshadow"
     )
 
     set(EXTENDED_DEBUG

@@ -64,11 +64,11 @@ class BasicSDLInput {
             SDL_Event event;
             while (SDL_PollEvent(&event)) {
                 if (event.type == SDL_QUIT) {
-                    Dispatcher::GetInstance()->DispatchImmediate("EVENT_ALL_SHUTDOWN", std::shared_ptr<void>(nullptr));
+                    Dispatcher::GetInstance()->DispatchEvent("EVENT_ALL_SHUTDOWN", std::shared_ptr<void>(nullptr));
                 }
                 // Update the Input Device with the Event
                 if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-                    Dispatcher::GetInstance()->DispatchImmediate("EVENT_SDL_EVENT", std::make_shared<SDL_Event>(event));
+                    Dispatcher::GetInstance()->DispatchEvent("EVENT_SDL_EVENT", std::make_shared<SDL_Event>(event));
                 }
             }
         }
@@ -77,14 +77,14 @@ class BasicSDLInput {
             SDL_Event* sdl_event = (SDL_Event*)event_data.get();
 
             if (sdl_event->type == SDL_KEYDOWN) {
-                Dispatcher::GetInstance()->DispatchImmediate(
+                Dispatcher::GetInstance()->DispatchEvent(
                     "EVENT_INPUT",
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, true)));
 
             } else if (sdl_event->type == SDL_KEYUP) {
                 auto obj =
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, false));
-                Dispatcher::GetInstance()->DispatchImmediate("EVENT_INPUT", obj);
+                Dispatcher::GetInstance()->DispatchEvent("EVENT_INPUT", obj);
                 // std::cout << "Dispatched EVENT_INPUT " << obj << std::endl;
             }
         }
@@ -94,5 +94,5 @@ class BasicSDLInput {
     static BasicSDLInput::BasicSDLInputStaticInit init;
 };
 
-__attribute__((used)) BasicSDLInput::BasicSDLInputStaticInit BasicSDLInput::init;
-__attribute__((used)) static BasicSDLInput BASIC_SDL_INPUT_NORMAL_NAME;
+BasicSDLInput::BasicSDLInputStaticInit BasicSDLInput::init;
+static BasicSDLInput BASIC_SDL_INPUT_NORMAL_NAME;

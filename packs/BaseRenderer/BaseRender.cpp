@@ -18,7 +18,7 @@ class BaseRender {
             Dispatcher::GetInstance()->AddEventSubscriber(init_subscriber, "EVENT_INITIAL_HOOK");
         }
 
-        __attribute__((used)) void init(std::shared_ptr<void> event_data) {
+        [[gnu::used]] void init(std::shared_ptr<void> event_data) {
 
             int screen_width = 800;
             int screen_height = 600;
@@ -38,6 +38,6 @@ class BaseRender {
     static BaseRender::BaseRenderStaticInit init;
 };
 
-__attribute__((used)) BaseRender::BaseRenderStaticInit BaseRender::init;
+[[gnu::used]] BaseRender::BaseRenderStaticInit BaseRender::init;
 
-__attribute__((used)) static BaseRender BASE_RENDERER_NORMAL_NAME;
+[[gnu::used]] static BaseRender BASE_RENDERER_NORMAL_NAME;
