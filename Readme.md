@@ -14,9 +14,7 @@ Semi-Automatic Parallelization
 #Event Driven#
 Registering callbacks with The Event Engine is straightforward.
 ```cpp
-Subscriber* sub = new Subscriber(this,false); // creates a single threaded Subscriber object
-sub->method = std::bind(&Class::method, this, std::placeholders::_1); // for class methods
-// sub->method = std::bind(&method, std::placeholders::_1); // for global methods (mostly untested)
+Subscriber* sub = new Subscriber(this, Function_Cast(&Class::method)); // creates a multi-threaded Subscriber object
 Dispatcher::GetInstance()->AddEventSubscriber(sub, "EVENT_STRING_HERE");
 ```
 
@@ -28,13 +26,14 @@ To submit an event to The Event Engine
 Dispatcher::GetInstance()->DispatchEvent("EVENT_STRING_HERE", std::shared_ptr<void>(object)); // make shared_ptr to non-copyable object
 // Dispatcher::GetInstance()->DispatchEvent("EVENT_STRING_HERE", std::make_shared<ObjectType>(object)); // all other objects
 // Note that DispatchImmediate can be substituded for DispatchEvent if the event should be dispatched before the next call to Dispatcher::GetInstance()->Pump();
+// But also that DispatchImmediate has significantly higher overhead
 ```
 
 All methods that behave as event callbacks must take the form
 ```cpp
 void method(std::shared_ptr<void>);
 // or
-void ObjectType::method(std::shared_ptr<void>);
+void Class::method(std::shared_ptr<void>);
 ```
 
 More documentation on how The Event Engine handles background tasks is in the works.
@@ -49,10 +48,10 @@ In order to keep Code Packs modular and portable, Code Packs must use the cmake 
 #Semi-Automatic Parallelization#
 From the event documentation above
 ```cpp
-Subscriber* sub = new Subscriber(this,false); // creates an explicitly single-threaded Subscriber object
+Subscriber* sub = new Subscriber(this, Function_Cast(&Class::method), false); // creates an explicitly single-threaded Subscriber object
 ```
 and
 ```cpp
-Subscriber* sub = new Subscriber(this); // creates a multi-threaded Subscriber object
+Subscriber* sub = new Subscriber(this, Function_Cast(&Class::method)); // creates a multi-threaded Subscriber object
 ```
 If you opt to use the multi-threaded Subscriber object, take care when designing callbacks as they may be called multiple times concurrently with different arguments.  Shorter callbacks will make this practice more scalable.

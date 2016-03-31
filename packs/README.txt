@@ -12,7 +12,7 @@ To make a code pack for this engine each of the following requirements must be m
     -- Your code will not be automatically called in any other way than through Subscribers that are registered with Dispatcher
     -- Subscribers are called concurrently through Dispatcher.  Make sure to control non-threadsafe resources
 4. Your pack probably wants to emit some kind of Events through Dispatcher
-    -- Make sure to properly use std::shared_ptr<void> with a long enough object lifetime that the target exists when it event is processed
+    -- Make sure to properly use std::shared_ptr<void> with a long enough object lifetime that the target exists when the event is processed
 
 
 Useful EventID's:
