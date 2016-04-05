@@ -46,14 +46,15 @@ class BasicSDLInput {
                 std::cout << "BasicSDLInput is controlling SDL Events" << std::endl;
 
                 Subscriber* translating_subscriber =
-                    new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::translate));
+                    new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::translate), false);
                 Dispatcher::GetInstance()->AddEventSubscriber(translating_subscriber, "EVENT_SDL_EVENT");
             }
             // else {
             std::cout << "BasicSDLInput is translating SDL Events" << std::endl;
 
             // Otherwise lets control the PollEvent loop
-            Subscriber* sdl_event_control = new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::event_loop));
+            Subscriber* sdl_event_control =
+                new Subscriber(this, Function_Cast(&BasicSDLInputStaticInit::event_loop), false);
             Dispatcher::GetInstance()->AddEventSubscriber(sdl_event_control, "EVENT_APP_RUN");
             //}
         }
@@ -80,12 +81,12 @@ class BasicSDLInput {
                 Dispatcher::GetInstance()->DispatchEvent(
                     "EVENT_INPUT",
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, true)));
-
+                // std::cout << "Dispatched EVENT_INPUT " << sdl_event->key.keysym.sym << " true" << std::endl;
             } else if (sdl_event->type == SDL_KEYUP) {
-                auto obj =
+                std::shared_ptr<std::pair<int, bool>> obj =
                     std::make_shared<std::pair<int, bool>>(std::pair<int, bool>(sdl_event->key.keysym.sym, false));
                 Dispatcher::GetInstance()->DispatchEvent("EVENT_INPUT", obj);
-                // std::cout << "Dispatched EVENT_INPUT " << obj << std::endl;
+                // std::cout << "Dispatched EVENT_INPUT " << sdl_event->key.keysym.sym << " false" << std::endl;
             }
         }
     };
