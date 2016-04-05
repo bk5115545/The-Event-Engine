@@ -57,6 +57,8 @@ class Subscriber {
     }
     */
 
+    const void* target_for_prefetch() { return (void*)(method.target<SubscriptionFunction>()); }
+
     std::function<CallTypeFunction> call;
 
   protected:
@@ -66,9 +68,7 @@ class Subscriber {
     // This method needs to be updated if the SubscriptionFunction specification is changed
     void _threadsafe_call(std::shared_ptr<void> arg) {
         std::lock_guard<std::mutex> lock(concurrent_call_block);
-        // std::cout << "_call1 " << arg << std::endl;
         method(_owner, arg);
-        // std::cout << "_call2 " << arg << std::endl;
     }
 
     void _std_call(std::shared_ptr<void> arg) { method(_owner, arg); }

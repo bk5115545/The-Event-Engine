@@ -190,6 +190,19 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
             continue; // no jobs so lets just wait
         }
 
+        /*
+            it's highly probable that these jobs don't exist in this thread's L2-i cache portion
+            it's also probable that there are too many jobs to cache into the shared L3
+            lets try to invoke the built-in prefetch since we're sure of the execution path
+
+            Note that even when L2 is unified between code and data (and it often is nowadays), the TLB is rarely
+            shared. As such the prefetch instruction when present will most likely use the data TLB (the intel
+            documentation isn't explicit but it uses the word 'data' everywhere). So when the code gets to run the
+            prefetched bytes, it might generate a TLB miss but the entries required to resolve it will already be primed
+            in the L2 (page walking entries are stored in L2 like normal data) which SHOULD still be faster than
+           defering to main memory.
+        */
+
         if (allocated == available && !erased) {
             std::cerr << "Could not erase " << available << " jobs from work queue.  They will be double processed."
                       << std::endl;
@@ -203,6 +216,14 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
             try {
                 // std::cerr << "Thread try_call try." << std::endl;
                 std::pair<Subscriber*, std::shared_ptr<void>>& work = thread_cache.at(i);
+
+                // put first cache-line (between 32 and 64 bytes) of next function into L2-d cache (which is HOPEFULLY
+                // faster than referencing main memory)
+                // but it would be a lot nicer if x86 had instructions to prefetch into the instruction cache
+                // for rare but time-sensitive code paths
+                if (i + 1 < thread_cache.size() - 1)
+                    __builtin_prefetch((thread_cache.at(i + 1).first->target_for_prefetch()), 0, 1);
+
                 work.first->call(work.second);
                 // std::cerr << "Thread try_call success." << std::endl;
             } catch (std::string e) {
