@@ -3,7 +3,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
-#include <deque>
+#include <vector>
 #include <map>
 #include <memory>
 
@@ -11,8 +11,12 @@
 #include <list>
 
 // Begin Dispatcher Class Section
+class Subscriber;
 
 using EventType = std::string;
+using WorkTarget = Subscriber*;
+using WorkArguments = std::shared_ptr<void>;
+using WorkPair = std::pair<WorkTarget, WorkArguments>;
 
 class Subscriber;
 
@@ -27,13 +31,13 @@ class Dispatcher {
 
     static Dispatcher* instance;
 
-    std::deque<std::pair<EventType, std::shared_ptr<void>>>* dispatch_events;
-    std::map<EventType, std::list<Subscriber*>*>* mapped_events;
+    std::vector<std::pair<EventType, WorkArguments>>* dispatch_events;
+    std::map<EventType, std::list<WorkTarget>*>* mapped_events;
 
-    static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* thread_queue;
-    static std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* nonserial_queue;
+    static std::list<WorkPair>* thread_queue;
+    static std::list<WorkPair>* nonserial_queue;
 
-    std::deque<std::thread*>* processing_threads; // using std::deque for constant time size() and O(1) random access
+    std::vector<std::thread*>* processing_threads; // using std::vector for constant time size() and O(1) random access
 
     static std::recursive_mutex nonserial_queue_mutex;
     static std::recursive_mutex dispatch_queue_mutex;
@@ -47,7 +51,7 @@ class Dispatcher {
     inline void CheckKey(EventType eventID) {
         std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
         if (mapped_events->count(eventID) == 0) {
-            mapped_events->emplace(eventID, new std::list<Subscriber*>());
+            mapped_events->emplace(eventID, new std::list<WorkTarget>());
             return;
         }
     }
@@ -59,11 +63,11 @@ class Dispatcher {
 
     void Terminate();
 
-    void AddEventSubscriber(Subscriber* requestor, const EventType);
+    void AddEventSubscriber(WorkTarget requestor, const EventType);
     std::list<Subscriber*> GetAllSubscribers(const void* owner);
 
-    void DispatchEvent(const EventType eventID, const std::shared_ptr<void> eventData);
-    void DispatchImmediate(const EventType eventID, const std::shared_ptr<void> eventData);
+    void DispatchEvent(const EventType eventID, const WorkArguments eventData);
+    void DispatchImmediate(const EventType eventID, const WorkArguments eventData);
 
     void Pump();
     void NonSerialProcess();

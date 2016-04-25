@@ -59,25 +59,29 @@ class EngineCoreMinimal {
         quit = false;
         while (!quit) {
             // Provide a way for packs to hook into the main loop
+            // std::cout << "dispatching run" << std::endl;
             Dispatcher::GetInstance()->DispatchEvent("EVENT_APP_RUN", std::shared_ptr<void>(nullptr));
+            // std::cout << "dispatched run" << std::endl;
             Dispatcher::GetInstance()->Pump();
+            // std::cout << "pumped run" << std::endl;
             Dispatcher::GetInstance()->NonSerialProcess();
+            // std::cout << "processed run" << std::endl;
 
             while (Dispatcher::GetInstance()->GetApproximateSize() > 2000) {
                 Dispatcher::GetInstance()->Pump();
                 Dispatcher::GetInstance()->NonSerialProcess();
-                sleep(0); // hint to scheduler to yeild processor to other threads
+                sleep(1); // hint to scheduler to yeild processor to other threads
             }
 
-            if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
-                // std::vector<std::string> message;
-                // message.push_back(std::string("Main.cpp"));
-                // message.push_back(std::string("Test of logging."));
+            // if (ProviderRegistry::GetInstance()->hasProvider("Engine Logging")) {
+            // std::vector<std::string> message;
+            // message.push_back(std::string("Main.cpp"));
+            // message.push_back(std::string("Test of logging."));
 
-                // ProviderRegistry::GetInstance()
-                //    ->lookup("Engine Logging")
-                //    ->provide(std::make_shared<std::vector<std::string>>(message));
-            }
+            // ProviderRegistry::GetInstance()
+            //    ->lookup("Engine Logging")
+            //    ->provide(std::make_shared<std::vector<std::string>>(message));
+            //}
         }
     }
 

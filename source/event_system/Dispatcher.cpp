@@ -4,7 +4,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
-#include <deque>
+#include <vector>
 #include <queue>
 #include <map>
 #include <string>
@@ -27,8 +27,8 @@ std::recursive_mutex Dispatcher::mapped_event_mutex;
 std::condition_variable_any Dispatcher::thread_signal;
 
 Dispatcher* Dispatcher::instance = nullptr;
-std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::thread_queue;
-std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>* Dispatcher::nonserial_queue;
+std::list<WorkPair>* Dispatcher::thread_queue;
+std::list<WorkPair>* Dispatcher::nonserial_queue;
 
 // Begin Class Methods
 Dispatcher::Dispatcher() {}
@@ -48,17 +48,17 @@ void Dispatcher::Initialize() {
     if (!initialized) {
         initialized.store(true);
 
-        dispatch_events = new std::deque<std::pair<EventType, std::shared_ptr<void>>>();
-        mapped_events = new std::map<EventType, std::list<Subscriber*>*>();
-        thread_queue = new std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>();
-        nonserial_queue = new std::deque<std::pair<Subscriber*, std::shared_ptr<void>>>();
+        dispatch_events = new std::vector<std::pair<EventType, WorkArguments>>();
+        mapped_events = new std::map<EventType, std::list<WorkTarget>*>();
+        thread_queue = new std::list<WorkPair>();
+        nonserial_queue = new std::list<WorkPair>();
 
-        processing_threads = new std::deque<std::thread*>();
+        processing_threads = new std::vector<std::thread*>();
 
         running.store(true);
 
         // Adjust the thread count
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 8; i++) {
             std::thread* processing_thread = new std::thread(ThreadProcess, i);
             processing_threads->push_back(processing_thread);
         }
@@ -71,8 +71,8 @@ void Dispatcher::Pump() {
     if (!running)
         return;
 
-    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> serialized;
-    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> unserialized;
+    std::vector<WorkPair> serialized;
+    std::vector<WorkPair> unserialized;
 
     std::lock_guard<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
     try {
@@ -99,10 +99,12 @@ void Dispatcher::Pump() {
 
                     if ((*it)->_serialized) {
                         // thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
-                        serialized.push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second));
+                        serialized.push_back(
+                            std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second)); // coppying right now...
                     } else {
                         // nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
-                        unserialized.push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second));
+                        unserialized.push_back(
+                            std::pair<Subscriber*, std::shared_ptr<void>>(*it, i.second)); // coppying right now...
                     }
                 }
             } catch (std::string msg) {
@@ -113,11 +115,15 @@ void Dispatcher::Pump() {
         std::cerr << "Error in Dispatcher::Pump()" << std::endl << message << std::endl;
     }
 
-    std::lock_guard<std::recursive_mutex> thread_queue_lock(thread_queue_mutex);
-    thread_queue->insert(thread_queue->end(), serialized.begin(), serialized.end());
+    { // scope control vs try-catch is preference
+        std::lock_guard<std::recursive_mutex> thread_queue_lock(thread_queue_mutex);
+        thread_queue->insert(thread_queue->end(), serialized.begin(), serialized.end());
+    }
 
-    std::lock_guard<std::recursive_mutex> nonserial_queue_lock(nonserial_queue_mutex);
-    nonserial_queue->insert(nonserial_queue->end(), unserialized.begin(), unserialized.end());
+    { // scope control vs try-catch is preference
+        std::lock_guard<std::recursive_mutex> nonserial_queue_lock(nonserial_queue_mutex);
+        nonserial_queue->insert(nonserial_queue->end(), unserialized.begin(), unserialized.end());
+    }
 
     thread_signal.notify_all(); // it's possible we're in a pseudo-deadlock because the entire thread_queue
                                 // wasn't consumed in 1 pass of the thread pool
@@ -129,30 +135,35 @@ void Dispatcher::Pump() {
 
 void Dispatcher::NonSerialProcess() {
     std::lock_guard<std::recursive_mutex> lock(nonserial_queue_mutex);
+    bool worked = false;
     while (nonserial_queue->size() > 0) {
         // NonSericalQueue::value_type work
         std::pair<Subscriber*, std::shared_ptr<void>> work = nonserial_queue->front();
-        nonserial_queue->pop_front(); // wait to invalidate reference until work is finished
+        nonserial_queue->erase(nonserial_queue->begin());
 
         try {
             // std::cout << work.first << "\t" << work.second << std::endl;
             work.first->call(work.second);
+            worked = true;
         } catch (std::string msg) {
             std::cerr << "Exception thrown by function called in nonserial processing." << std::endl;
             std::cerr << msg << std::endl;
         }
     }
+
+    if (worked)
+        nonserial_queue->clear(); // TODO(bk5115545)
 }
 
 void Dispatcher::ThreadProcess(int thread_id_passed) {
-    const int cache_size = 5;
+    const int cache_size = 25;
     const int thread_id = thread_id_passed;
     UNUSED(thread_id);
 
     // There is a lot of issues with threads blocking on the thread_queue_mutex lock
     // if each thread had a list of jobs to do then this wouldn't be nearly as big of an issue
-    std::deque<std::pair<Subscriber*, std::shared_ptr<void>>> thread_cache; // a list of jobs to do
-
+    std::vector<WorkPair> thread_cache; // a list of jobs to do
+    thread_cache.reserve(cache_size);   // TODO(bk5115545)
     // std::cerr << "Thread acquire lock." << std::endl;
     thread_queue_mutex.lock();
 
@@ -176,11 +187,18 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
         bool erased = false;
 
         try {
+            // This is hack-ish but required for constant time range erases
+            auto end = thread_queue->begin();
+            for (unsigned int i = 0; i < available; i++)
+                end++;
+
             // move work to the cache
-            thread_cache.insert(thread_cache.begin(), thread_queue->begin(), thread_queue->begin() + available);
+            thread_cache.insert(thread_cache.begin(), thread_queue->begin(), end);
             allocated = available;
-            thread_queue->erase(thread_queue->begin(), thread_queue->begin() + available);
+
+            thread_queue->erase(thread_queue->begin(), end);
             erased = true;
+
         } catch (std::string e) {
             std::cerr << "Exception thrown while waiting/getting work for Thread.  " << available
                       << " jobs possibly lost." << std::endl;
@@ -208,14 +226,14 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
                       << std::endl;
         }
 
-        // std::cout << "Pre thread explicit unlock." << std::endl;
+        // std::cout << "Pre thread explicit unlock." << thread_queue->size() << std::endl;
         thread_queue_mutex.unlock();
         // std::cerr << "Thread post unlock." << std::endl;
 
         for (unsigned int i = 0; i < thread_cache.size(); i++) {
             try {
                 // std::cerr << "Thread try_call try." << std::endl;
-                std::pair<Subscriber*, std::shared_ptr<void>>& work = thread_cache.at(i);
+                WorkPair& work = thread_cache.at(i);
 
                 // put first cache-line (between 32 and 64 bytes) of next function into L2-d cache (which is HOPEFULLY
                 // faster than referencing main memory)
@@ -235,12 +253,12 @@ void Dispatcher::ThreadProcess(int thread_id_passed) {
     }
 }
 
-void Dispatcher::DispatchEvent(const EventType eventID, const std::shared_ptr<void> eventData) {
+void Dispatcher::DispatchEvent(const EventType eventID, const WorkArguments eventData) {
     std::lock_guard<std::recursive_mutex> dispatchLock(dispatch_queue_mutex);
-    dispatch_events->push_back(std::pair<EventType, std::shared_ptr<void>>(eventID, eventData));
+    dispatch_events->push_back(std::pair<EventType, WorkArguments>(eventID, eventData));
 }
 
-void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void> eventData) {
+void Dispatcher::DispatchImmediate(EventType eventID, const WorkArguments eventData) {
     // std::cout << "DispatchImmediate " << eventID << "\t" << eventData << std::endl;
     CheckKey(eventID);
 
@@ -253,31 +271,33 @@ void Dispatcher::DispatchImmediate(EventType eventID, const std::shared_ptr<void
 
         // Remove nullptr Subscriber* from the processing
         if (*it == nullptr) {
+            // everything else is read-only so we only REALLY need to get the mutex when we edit it
+            std::lock_guard<std::recursive_mutex> lock(mapped_event_mutex);
             it = mapped_events->at(eventID)->erase(it);
             continue;
         }
 
         if ((*it)->_serialized) {
             std::lock_guard<std::recursive_mutex> lock(thread_queue_mutex);
-            thread_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+            thread_queue->push_back(WorkPair(*it, eventData));
         } else {
             std::lock_guard<std::recursive_mutex> lock2(nonserial_queue_mutex);
-            nonserial_queue->push_back(std::pair<Subscriber*, std::shared_ptr<void>>(*it, eventData));
+            nonserial_queue->push_back(WorkPair(*it, eventData));
         }
     }
 
-    thread_signal.notify_all();
+    thread_signal.notify_one();
 }
 
-void Dispatcher::AddEventSubscriber(Subscriber* requestor, const EventType event_id) {
-    std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
+void Dispatcher::AddEventSubscriber(WorkTarget requestor, const EventType event_id) {
     CheckKey(event_id);
+    std::lock_guard<std::recursive_mutex> mapped_event_lock(mapped_event_mutex);
     mapped_events->at(event_id)->push_back(requestor);
 }
 
 // TODO(bk5115545) reimplement using map traversal
-std::list<Subscriber*> Dispatcher::GetAllSubscribers(const void* owner) {
-    std::list<Subscriber*> tmp;
+std::list<WorkTarget> Dispatcher::GetAllSubscribers(const void* owner) {
+    std::list<WorkTarget> tmp;
     UNUSED(owner);
     return tmp;
 }

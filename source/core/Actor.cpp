@@ -4,6 +4,8 @@
 #include "event_system/Dispatcher.h"
 #include "event_system/Subscriber.h"
 
+#include "util/CrossPlatform.h"
+
 Actor::Actor() {
     pos = glm::vec3(rand() % 10, rand() % 10, rand() % 10);
 
@@ -11,7 +13,7 @@ Actor::Actor() {
     subscribers.push_back(update_subscriber);
 
     // simulate load
-    for (int i = 0; i < 1000; i++)
+    for (int i = 0; i < 1; i++)
         Dispatcher::GetInstance()->AddEventSubscriber(update_subscriber, "EVENT_APP_RUN");
 }
 
@@ -23,6 +25,10 @@ Actor::~Actor() {
 
 void Actor::AddComponent(Component* new_component) { components.push_back(new_component); }
 
-void Actor::Update(std::shared_ptr<void> delta_time) {}
+void Actor::Update(std::shared_ptr<void> delta_time) {
+    volatile int i = 0;
+    while (i < 600000)
+        i++;
+}
 
 glm::vec3 Actor::get_position() { return pos; }
