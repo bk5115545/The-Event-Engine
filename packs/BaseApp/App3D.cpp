@@ -67,10 +67,10 @@ bool App3D::loadLevel(std::string file) {
         Actor* new_actor = new Actor();
         actors.push_back(new_actor);
 
-        // GlDrawable* new_gldrawable = new GlDrawable(new_actor);
-        // new_gldrawable->initialize(renderer, model_store->search("cube"));
-        // Component* new_component = static_cast<Component*>(new_gldrawable);
-        // new_actor->AddComponent(new_component);
+        GlDrawable* new_gldrawable = new GlDrawable(new_actor);
+        new_gldrawable->initialize(renderer, model_store->search("cube"));
+        Component* new_component = static_cast<Component*>(new_gldrawable);
+        new_actor->AddComponent(new_component);
     }
 
     return true;
@@ -82,9 +82,9 @@ void App3D::run(std::shared_ptr<void> event_data) {
     update(std::make_shared<float>(timer->get_deltaTime()));
     timer->update();
 
-    // renderer->preDraw();
-    // renderer->draw();
-    // renderer->postDraw();
+    renderer->preDraw();
+    renderer->draw();
+    renderer->postDraw();
 }
 
 void App3D::update(std::shared_ptr<void> event_data) {

@@ -25,10 +25,6 @@ Actor::~Actor() {
 
 void Actor::AddComponent(Component* new_component) { components.push_back(new_component); }
 
-void Actor::Update(std::shared_ptr<void> delta_time) {
-    volatile int i = 0;
-    while (i < 600000)
-        i++;
-}
+void Actor::Update(std::shared_ptr<void> delta_time) {}
 
 glm::vec3 Actor::get_position() { return pos; }

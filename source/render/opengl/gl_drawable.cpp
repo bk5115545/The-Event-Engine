@@ -5,6 +5,7 @@ GlDrawable::GlDrawable(Actor* owner) {
 
     Subscriber* s = new Subscriber(this, Function_Cast(&GlDrawable::process));
     Dispatcher::GetInstance()->AddEventSubscriber(s, "EVENT_COMPONENT_UPDATE");
+
     subscribers.push_back(s);
 }
 
