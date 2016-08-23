@@ -1,4 +1,4 @@
-// Copyright 2015 Casey Megginson and Blaise Koch
+
 
 #define GLM_FORCE_RADIANS
 #undef _GLIBCXX_ATOMIC_BUILTINS
