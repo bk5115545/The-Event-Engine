@@ -1,4 +1,4 @@
-// Copyright Casey Megginsons and Blaise Koch 2015
+
 
 #include <algorithm>
 #include <atomic>
